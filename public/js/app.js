@@ -2,10 +2,11 @@
 
 import { greyHex, textOn, valueOfHex } from './color.js';
 import { adjustPalette, GAP_WARN, generatePalette, minGap, rankOf, rerollColor, roleFor, setColorValue, sortPalette } from './palette.js';
-import { addToHistory, load, removeFromHistory, saveHistory, saveSettings } from './storage.js';
+import { addToHistory, load, paletteFromParam, removeFromHistory, saveHistory, saveSettings } from './storage.js';
 import { drawSphere } from './sphere.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
-import { icon, setIcon } from './icons.js';
+import { setIcon } from './icons.js';
+import { announce as say, button, copy, el, iconButton, toast } from './ui.js';
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -97,24 +98,6 @@ function restore(cols) {
 }
 
 /* ---------- render ---------- */
-function el(tag, className, text) {
-  const e = document.createElement(tag);
-  if (className) e.className = className;
-  if (text != null) e.textContent = text;
-  return e;
-}
-function button(className, text) {
-  const b = el('button', className, text);
-  b.type = 'button';
-  return b;
-}
-function iconButton(className, name, label) {
-  const b = button('tool ' + className);
-  b.append(icon(name));
-  b.setAttribute('aria-label', label);
-  b.title = label;
-  return b;
-}
 function setLock(btn, rerollBtn, on) {
   btn.setAttribute('aria-pressed', String(on));
   btn.title = on ? 'Fijado: no cambia al generar' : 'Fijar';
@@ -248,21 +231,7 @@ function renderHistory() {
 }
 
 /* ---------- feedback ---------- */
-let toastTimer;
-function toast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
-}
-// Screen readers hear a short summary instead of the whole swatch grid.
-function announce() {
-  $('announce').textContent = 'Paleta: values ' + palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', ');
-}
-function copy(text, msg) {
-  try { navigator.clipboard.writeText(text).then(() => toast(msg), () => toast(text)); } catch { toast(text); }
-}
+const announce = () => say('Paleta: values ' + palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', '));
 
 /* ---------- events ---------- */
 // Narrow layouts: settings collapse into a toggle above the palette (the
@@ -321,4 +290,14 @@ els.bw.addEventListener('change', () => {
 const saved = load();
 history = saved.history;
 writeSettings(saved.settings);
-setPalette(saved.palette ?? { colors: FIRST_PALETTE, locked: FIRST_PALETTE.map(() => false) });
+// A palette sent by another tool (e.g. "Paleta desde una foto") replaces the
+// current one, which goes to the history. The URL is cleaned so a reload doesn't re-import.
+const incoming = paletteFromParam(new URLSearchParams(location.search).get('colors'));
+if (location.search) window.history.replaceState(null, '', location.pathname);
+if (incoming) {
+  if (saved.palette) { history = addToHistory(history, saved.palette.colors); saveHistory(history); }
+  setPalette({ colors: incoming, locked: incoming.map(() => false) });
+  toast('Paleta traída de otra herramienta');
+} else {
+  setPalette(saved.palette ?? { colors: FIRST_PALETTE, locked: FIRST_PALETTE.map(() => false) });
+}

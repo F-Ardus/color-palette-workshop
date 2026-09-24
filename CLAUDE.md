@@ -7,6 +7,17 @@ Herramientas:
 - **Generador de paletas** (`/`): paletas por armonía de tonos. Con "Escalar values" (por defecto)
   cada color ocupa un escalón de value distinto, pensado para claroscuro (value = L* de CIE / 10,
   de 0 a 10); sin escalar, cada color toma un value al azar dentro del rango.
+- **Paleta desde una foto** (`/foto/`): extrae de 3 a 24 colores de una imagen (k-means en OKLab sobre una
+  copia de 256px, determinístico), ordenados por value, con el % de la imagen que ocupa cada uno y la
+  imagen repintada solo con ellos (o en grises). "Automático" busca 24 y une lo que no se distingue
+  (`mergeClusters`: primero lo que ocupa <0.4%, después pares más cerca que `mergeDistance(detalle)`).
+  "Randomizar colores" (`recolor.js`) cambia los tonos según una armonía del generador manteniendo value y
+  saturación de cada color; agrupa los tonos parecidos de la foto y manda cada grupo a un tono de la
+  armonía (±20° como máximo). Cada tarjeta tiene ojo (ver solo ese color en la imagen, el resto en gris;
+  también tocando la tarjeta, Escape para salir), refresh (`rerollOne`: otro tono, mismo value y saturación;
+  a los grises les da 0.3 de saturación) y candado (lo respeta "Randomizar colores" y "Originales").
+  Extraer de nuevo borra fijados y resaltado. La imagen nunca sale del navegador. "Abrir en el generador" pasa la paleta
+  por URL; si hay más de 9 colores, los 9 que más ocupan (`topByShare`).
 
 ## Stack y deploy
 - HTML + CSS + módulos ES nativos en `public/`. Sin build ni dependencias de runtime;
@@ -34,6 +45,13 @@ Herramientas:
   los ajustes quedan arriba de la paleta como panel plegable (`#controlsToggle`, cerrado al cargar,
   alto máximo 50vh con scroll interno); en escritorio siempre están abiertos a la izquierda.
 - `public/js/nav.js` — menú desplegable de la barra lateral; lo carga cada página.
+- `public/js/ui.js` — helpers de DOM compartidos (`el`, `button`, `iconButton`, `toast`, `announce`, `copy`);
+  cada página tiene `#toast` y `#announce`.
+- `public/foto/index.html` + `public/js/foto-app.js` — la herramienta de foto. `public/js/extract.js` — puro:
+  `extractPalette`, `extractAuto`, `kmeans`, `posterize` sobre bytes RGBA. `public/js/recolor.js` — puro:
+  `recolor`, `groupHues`. Preferencias propias en localStorage `pk-foto`.
+- Pasar una paleta entre herramientas: `/?colors=RRGGBB,...` (`paletteParam` / `paletteFromParam` en
+  `storage.js`). El generador la toma al cargar, manda la paleta anterior al historial y limpia la URL.
 - `public/icons.svg` — sprite con los íconos de Lucide que se usan (ISC, crédito en el archivo). En HTML:
   `<svg class="icon" aria-hidden="true"><use href="/icons.svg#nombre"/></svg>`; desde JS, `icon(nombre)` de
   `public/js/icons.js`. Para sumar uno, copiar su SVG de `lucide-static` como `<symbol id="nombre">`; los
@@ -49,10 +67,10 @@ Herramientas:
   si cambia el logo, regenerarlos.
 
 ## Sumar una herramienta
-- Una página HTML por herramienta en `public/` (p. ej. `public/contraste/index.html`), con el mismo
+- Una página HTML por herramienta en `public/` (p. ej. `public/foto/index.html`), con el mismo
   bloque `.app` / `.sidebar` / `.topbar` y `js/nav.js`. El markup de la barra está copiado en cada
   página: al sumar una herramienta, agregar su link en la `<nav>` de todas y marcar la actual con
-  `aria-current="page"`. Si las páginas pasan de tres o cuatro, conviene generar la barra desde un módulo.
+  `aria-current="page"`. En páginas de subcarpetas, rutas absolutas (`/styles.css`, `/js/...`). Si las páginas pasan de tres o cuatro, conviene generar la barra desde un módulo.
 - Lógica en módulos puros con test; un módulo `*-app.js` por página que cablea el DOM.
 
 ## Modelo (Generador de paletas)

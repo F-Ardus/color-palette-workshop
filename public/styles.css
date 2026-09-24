@@ -83,7 +83,7 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid currentColor;border-
 }
 @container (max-width:620px){
   .actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
-  #gen{grid-column:1/-1;order:-1}
+  .actions .primary{grid-column:1/-1;order:-1}
 }
 /* no keyboard shortcut to advertise on touch screens */
 @media (hover:none){kbd{display:none}}
@@ -151,6 +151,48 @@ canvas{width:100%;height:auto;border-radius:8px;display:block;max-width:100%}
 .hist button span{display:block;height:100%}
 .hist .empty{color:var(--muted);font-size:13px}
 .tips{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+button.small{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:13px}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:disabled:hover{border-color:var(--line)}
+button.primary:disabled:hover{border-color:var(--accent)}
+.empty-note{margin:0;color:var(--muted);font-size:13.5px}
+
+/* ---------- paleta desde una foto ---------- */
+.foto-main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.foto-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@container (max-width:760px){.foto-top{grid-template-columns:1fr}}
+.dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:260px;padding:20px;border:2px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center;cursor:pointer;transition:border-color .15s,background-color .15s}
+.dropzone .icon{width:28px;height:28px;margin-bottom:4px}
+.dropzone strong{color:var(--ink);font-weight:600}
+.dropzone:hover,.card.over .dropzone{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.card.over{border-color:var(--accent)}
+.foto-img{display:block;width:auto;height:auto;max-width:100%;max-height:440px;margin:0 auto;border-radius:8px}
+.palette-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;margin-bottom:-8px}
+.field.inline{flex-direction:row;align-items:center;gap:14px;width:min(340px,100%)}
+.field.inline label{flex:none;gap:10px}
+.foto-swatches{min-height:220px}
+/* many colors: a wrapping grid instead of one row of slivers */
+.swatches.many{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));grid-auto-rows:minmax(150px,auto);min-height:0}
+@container (max-width:620px){.swatches.many{grid-template-columns:1fr;grid-auto-rows:minmax(64px,auto)}}
+.palette-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
+.palette-note{margin:-6px 0 0}
+.recolor-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.recolor-bar select{padding:5px 8px;font-size:13.5px}
+.recolor-bar .hint{flex-basis:100%;margin:0}
+button.accent{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+button.accent:hover{border-color:var(--accent)}
+.sw .share-pct{font-size:12px;opacity:.85}
+/* clicking a card shows that color alone on the image */
+.foto-swatches .sw{cursor:pointer;transition:opacity .15s}
+.foto-swatches.has-focus .sw:not(.focused){opacity:.45}
+.sw.focused{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ink)}
+.sw .spot[aria-pressed="true"]{border-color:currentColor;background:rgba(127,127,127,.32)}
+.sw .tools{flex-wrap:wrap}
+.swatches.many .sw .tools{gap:4px}
+.swatches.many .sw .tool{width:28px;height:28px}
+.swatches.many .sw .tool .icon{width:14px;height:14px}
+
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){.sw,.toast,.sidebar,.sidebar.open,.controls-toggle .chevron{transition:none}}
+@media (prefers-reduced-motion:reduce){.dropzone,.sw,.toast,.sidebar,.sidebar.open,.controls-toggle .chevron{transition:none}}

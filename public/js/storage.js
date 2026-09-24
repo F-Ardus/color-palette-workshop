@@ -70,6 +70,13 @@ export function sanitizeSettings(raw) {
   return { settings, palette };
 }
 
+// Palettes handed over by other tools travel in the URL as ?colors=RRGGBB,RRGGBB,...
+export const paletteParam = cols => 'colors=' + cols.map(h => h.slice(1)).join(',');
+export function paletteFromParam(raw) {
+  if (typeof raw !== 'string' || !raw) return null;
+  return cleanPalette(raw.split(',').map(h => '#' + h.trim()));
+}
+
 export function sanitizeHistory(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.map(cleanPalette).filter(Boolean).slice(0, HISTORY_MAX);

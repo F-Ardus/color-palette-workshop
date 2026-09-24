@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  addToHistory, DEFAULTS, HISTORY_MAX, load, removeFromHistory, sanitizeHistory, sanitizeSettings, saveSettings,
+  addToHistory, DEFAULTS, HISTORY_MAX, load, paletteFromParam, paletteParam, removeFromHistory, sanitizeHistory, sanitizeSettings, saveSettings,
 } from '../public/js/storage.js';
 
 const PAL = ['#F2E3B3', '#D98E73', '#4F7A6B', '#6B3A5A', '#1E1B3A'];
@@ -82,4 +82,13 @@ test('recipes, scale and keep round-trip; bad recipes are dropped', () => {
   const bad = sanitizeSettings({ colors: PAL, recipes: [...recipes.slice(0, 4), { hue: 'x', jitter: 0, pick: 0 }] });
   assert.equal(bad.palette.recipes, undefined);
   assert.equal(sanitizeSettings({ colors: PAL }).settings.scale, true, 'scaled by default');
+});
+
+test('palettes travel between tools as a URL parameter', () => {
+  assert.equal(paletteParam(PAL), 'colors=F2E3B3,D98E73,4F7A6B,6B3A5A,1E1B3A');
+  const raw = new URLSearchParams(paletteParam(PAL)).get('colors');
+  assert.deepEqual(paletteFromParam(raw), PAL);
+  assert.deepEqual(paletteFromParam('f2e3b3, d98e73 ,4f7a6b'), ['#F2E3B3', '#D98E73', '#4F7A6B']);
+  for (const bad of [null, '', 'F2E3B3,D98E73', 'F2E3B3,XYZ,000000', 'F2E3B3,<b>,000000', Array(10).fill('000000').join(',')])
+    assert.equal(paletteFromParam(bad), null, String(bad));
 });
