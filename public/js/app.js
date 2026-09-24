@@ -296,7 +296,10 @@ const incoming = paletteFromParam(new URLSearchParams(location.search).get('colo
 if (location.search) window.history.replaceState(null, '', location.pathname);
 if (incoming) {
   if (saved.palette) { history = addToHistory(history, saved.palette.colors); saveHistory(history); }
-  setPalette({ colors: incoming, locked: incoming.map(() => false) });
+  // Other tools may send any order (the creator keeps the user's). Here a
+  // scaled palette is always light to dark, and an unscaled one follows "Ordenar por value".
+  const received = { colors: incoming, locked: incoming.map(() => false) };
+  setPalette(els.scale.checked || els.order.checked ? sortPalette(received) : received);
   toast('Paleta traída de otra herramienta');
 } else {
   setPalette(saved.palette ?? { colors: FIRST_PALETTE, locked: FIRST_PALETTE.map(() => false) });

@@ -16,7 +16,13 @@ Herramientas:
   armonía (±20° como máximo). Cada tarjeta tiene ojo (ver solo ese color en la imagen, el resto en gris;
   también tocando la tarjeta, Escape para salir), refresh (`rerollOne`: otro tono, mismo value y saturación;
   a los grises les da 0.3 de saturación) y candado (lo respeta "Randomizar colores" y "Originales").
-  Extraer de nuevo borra fijados y resaltado. La imagen nunca sale del navegador. "Abrir en el generador" pasa la paleta
+  Extraer de nuevo borra fijados y resaltado. La imagen nunca sale del navegador.
+- **Creador de paletas** (`/crear/`): paleta a mano de 0 a 24 colores. Arranca al azar (`generatePalette` sin
+  escalar y armonía al azar), pegando hex (panel o Ctrl+V en cualquier lado; `parseHexList` acepta la salida
+  de "Copiar hex", links, CSS, etc.) o de cero. Editar con selector de color o campo hex, mover, borrar,
+  agregar, ordenar por value; todo con Deshacer / Ctrl+Z. La dirección de la página siempre es el link a la
+  paleta actual (`/crear/?colors=...`, se actualiza con `replaceState`). Exporta imagen PNG 1200×630
+  (`palette-image.js`), link (compartir en pantallas táctiles), hex, .aco y al generador (primeros 9). "Abrir en el generador" pasa la paleta
   por URL; si hay más de 9 colores, los 9 que más ocupan (`topByShare`).
 
 ## Stack y deploy
@@ -50,8 +56,12 @@ Herramientas:
 - `public/foto/index.html` + `public/js/foto-app.js` — la herramienta de foto. `public/js/extract.js` — puro:
   `extractPalette`, `extractAuto`, `kmeans`, `posterize` sobre bytes RGBA. `public/js/recolor.js` — puro:
   `recolor`, `groupHues`. Preferencias propias en localStorage `pk-foto`.
+- `public/crear/index.html` + `public/js/crear-app.js`. `public/js/hexlist.js` — puro: `parseHexList`,
+  `hexListParam`, `colorsFromParam` (listas de 1 a 24). `public/js/palette-image.js` — `imageLayout` (puro)
+  y `drawPaletteImage`. Guarda en localStorage `pk-crear`.
 - Pasar una paleta entre herramientas: `/?colors=RRGGBB,...` (`paletteParam` / `paletteFromParam` en
-  `storage.js`). El generador la toma al cargar, manda la paleta anterior al historial y limpia la URL.
+  `storage.js`). El generador la toma al cargar, manda la paleta anterior al historial, limpia la URL y la ordena por
+  value (salvo sin escalar con "Ordenar por value" apagado): las herramientas pueden mandar cualquier orden.
 - `public/icons.svg` — sprite con los íconos de Lucide que se usan (ISC, crédito en el archivo). En HTML:
   `<svg class="icon" aria-hidden="true"><use href="/icons.svg#nombre"/></svg>`; desde JS, `icon(nombre)` de
   `public/js/icons.js`. Para sumar uno, copiar su SVG de `lucide-static` como `<symbol id="nombre">`; los
