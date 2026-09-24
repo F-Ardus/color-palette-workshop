@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Generador de paletas con escala de values para dibujar en claroscuro.">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Escala de Values</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#ECEDEF;
+  --panel:#F7F7F8;
+  --ink:#1B1D22;
+  --muted:#5F636D;
+  --line:#D3D5DA;
+  --accent:#2F4B8A;
+  --accent-ink:#FFFFFF;
+  --focus:#2F4B8A;
+  --display:"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --body:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171B; --panel:#1D2026; --ink:#E7E8EB; --muted:#9CA1AB; --line:#30343C;
+    --accent:#8FA8E6; --accent-ink:#10131A; --focus:#8FA8E6; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171B; --panel:#1D2026; --ink:#E7E8EB; --muted:#9CA1AB; --line:#30343C;
+  --accent:#8FA8E6; --accent-ink:#10131A; --focus:#8FA8E6; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 48px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:22px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,44px);line-height:1.02;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:6px 0 0;max-width:56ch}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 14px;font-weight:500}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.75;margin-left:6px}
+
+.layout{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+
+.controls{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px}
+.controls h2,.section-h{font-family:var(--body);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{display:flex;justify-content:space-between;gap:8px;font-weight:500;font-size:14px}
+.field output{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.field .hint{font-size:12.5px;color:var(--muted);line-height:1.4}
+select{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px}
+.check input{accent-color:var(--accent);width:16px;height:16px}
+hr{border:0;border-top:1px solid var(--line);margin:0}
+
+.main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.swatches{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;min-height:300px}
+.sw{position:relative;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;padding:12px 10px;min-width:0;transition:background-color .25s}
+.sw .v{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,34px);line-height:1;font-variant-numeric:tabular-nums}
+.sw .vlab{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:4px}
+.sw .bottom{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sw .hex{font-family:var(--mono);font-size:12.5px;background:none;border:0;padding:2px 0;color:inherit;text-align:left}
+.sw .hex:hover{text-decoration:underline}
+.sw .lock{font-size:12px;padding:4px 8px;border-radius:6px;background:rgba(127,127,127,.18);border:1px solid transparent;color:inherit}
+.sw .lock[aria-pressed="true"]{border-color:currentColor;background:rgba(127,127,127,.32)}
+.sw .role{font-size:12px;opacity:.85;line-height:1.3}
+@media (max-width:620px){
+  .swatches{grid-auto-flow:row;grid-auto-rows:minmax(64px,auto);min-height:0}
+  .sw{flex-direction:row;align-items:center;padding:10px 12px}
+  .sw .bottom{flex-direction:row;align-items:center;gap:10px}
+  .sw .role{display:none}
+}
+
+.grey{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.gray-wrap{display:flex;flex-direction:column;gap:8px}
+.warn{font-size:13px;color:var(--muted)}
+.warn strong{color:var(--ink)}
+
+.lower{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+@media (max-width:760px){.lower{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+canvas{width:100%;height:auto;border-radius:8px;display:block;max-width:100%}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hist button{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;height:30px;padding:0;overflow:hidden;border-radius:6px}
+.hist button span{display:block;height:100%}
+.hist .empty{color:var(--muted);font-size:13px}
+.tips{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.sw,.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Escala de Values</h1>
+      <p class="lede">Paletas donde cada color ocupa un escalón de value distinto, de la luz alta a la sombra más profunda. Pensado para retratos en claroscuro.</p>
+    </div>
+    <div class="actions">
+      <button id="copyAll" type="button">Copiar hex</button>
+      <button id="exportCsp" type="button" hidden title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta">Exportar a Clip Studio</button>
+      <button id="gen" class="primary" type="button">Generar <kbd>espacio</kbd></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="controls" aria-label="Ajustes">
+      <h2>Ajustes</h2>
+      <div class="field">
+        <label for="count">Cantidad de colores <output id="countOut">5</output></label>
+        <input id="count" type="range" min="3" max="9" step="1" value="5">
+      </div>
+      <div class="field">
+        <label for="vHi">Value más claro <output id="vHiOut">9</output></label>
+        <input id="vHi" type="range" min="5" max="10" step="0.5" value="9">
+      </div>
+      <div class="field">
+        <label for="vLo">Value más oscuro <output id="vLoOut">1</output></label>
+        <input id="vLo" type="range" min="0" max="5" step="0.5" value="1">
+      </div>
+      <div class="field">
+        <label for="dist">Reparto de los values</label>
+        <select id="dist">
+          <option value="linear">Parejo</option>
+          <option value="dark">Más escalones oscuros (low key)</option>
+          <option value="light">Más escalones claros (high key)</option>
+        </select>
+        <span class="hint">Para claroscuro, low key deja más matices en la sombra.</span>
+      </div>
+      <hr>
+      <div class="field">
+        <label for="harmony">Armonía de tonos</label>
+        <select id="harmony">
+          <option value="random">Al azar</option>
+          <option value="analogous">Análoga</option>
+          <option value="complementary">Complementaria</option>
+          <option value="split">Complementaria dividida</option>
+          <option value="triad">Tríada</option>
+          <option value="mono">Monocromática</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="temp">Temperatura</label>
+        <select id="temp">
+          <option value="none">Libre</option>
+          <option value="warmLight">Luces cálidas, sombras frías</option>
+          <option value="coolLight">Luces frías, sombras cálidas</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sat">Saturación <output id="satOut">55%</output></label>
+        <input id="sat" type="range" min="0" max="100" step="1" value="55">
+      </div>
+      <div class="field">
+        <label for="jit">Variación de saturación <output id="jitOut">30%</output></label>
+        <input id="jit" type="range" min="0" max="100" step="1" value="30">
+      </div>
+      <label class="check"><input id="mute" type="checkbox"> Apagar los extremos</label>
+      <span class="hint" style="font-size:12.5px;color:var(--muted);margin-top:-10px">Baja la saturación del más claro y del más oscuro, como pasa con la luz real.</span>
+    </aside>
+
+    <section class="main">
+      <div id="swatches" class="swatches" aria-live="polite"></div>
+
+      <div class="gray-wrap">
+        <div class="row">
+          <span class="section-h">Prueba en blanco y negro</span>
+          <span class="warn" id="gapInfo"></span>
+        </div>
+        <div id="grey" class="grey" aria-hidden="true"></div>
+      </div>
+
+      <div class="lower">
+        <div class="card">
+          <div class="row">
+            <span class="section-h">Estudio de luz</span>
+            <label class="check"><input id="bw" type="checkbox"> Ver en grises</label>
+          </div>
+          <canvas id="sphere" width="520" height="400" aria-label="Esfera iluminada desde arriba a la izquierda, pintada solo con los colores de la paleta"></canvas>
+          <ul class="tips">
+            <li>Luz alta: el brillo en la frente, la nariz y los pómulos.</li>
+            <li>El value del medio va en la línea donde la luz se vuelve sombra.</li>
+            <li>El más oscuro para sombras proyectadas y el fondo.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="section-h">Paletas anteriores</span>
+          <div id="hist" class="hist"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+<div id="toast" class="toast" role="status"></div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const els = {count:$('count'),vHi:$('vHi'),vLo:$('vLo'),dist:$('dist'),harmony:$('harmony'),temp:$('temp'),sat:$('sat'),jit:$('jit'),mute:$('mute'),bw:$('bw')};
+
+/* ---------- color math (OKLCH) ---------- */
+function oklabToLin(L,a,b){
+  const l_=L+0.3963377774*a+0.2158037573*b, m_=L-0.1055613458*a-0.0638541728*b, s_=L-0.0894841775*a-1.2914855480*b;
+  const l=l_*l_*l_, m=m_*m_*m_, s=s_*s_*s_;
+  return [4.0767416621*l-3.3077115913*m+0.2309699292*s, -1.2684380046*l+2.6097574011*m-0.3413193965*s, -0.0041960863*l-0.7034186147*m+1.7076147010*s];
+}
+function lchToLin(L,C,h){const r=h*Math.PI/180;return oklabToLin(L,C*Math.cos(r),C*Math.sin(r));}
+const inGamut = c => c.every(v => v>=-0.0001 && v<=1.0001);
+function maxChroma(L,h){let lo=0,hi=0.4;for(let i=0;i<18;i++){const m=(lo+hi)/2;if(inGamut(lchToLin(L,m,h)))lo=m;else hi=m;}return lo;}
+const lum = c => 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+const lstarFromY = Y => Y>0.008856 ? 116*Math.cbrt(Y)-16 : 903.3*Y;
+const yFromLstar = L => L>8 ? Math.pow((L+16)/116,3) : L/903.3;
+const enc = v => {v=Math.min(1,Math.max(0,v));return v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055;};
+const dec = v => v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);
+function linToHex(c){return '#'+c.map(v=>Math.round(enc(v)*255).toString(16).padStart(2,'0')).join('').toUpperCase();}
+function hexToLin(h){return [1,3,5].map(i=>dec(parseInt(h.slice(i,i+2),16)/255));}
+function valueOfHex(h){return lstarFromY(lum(hexToLin(h)))/10;}
+function greyHex(v){const y=yFromLstar(v*10);const g=Math.round(enc(y)*255).toString(16).padStart(2,'0');return ('#'+g+g+g).toUpperCase();}
+
+// build a color hitting an exact Munsell-like value (CIE L* divided by 10)
+function makeColor(value,hue,satFrac){
+  const Yt=Math.max(1e-5,yFromLstar(value*10));
+  let L=Math.cbrt(Yt), c;
+  for(let i=0;i<6;i++){
+    const C=maxChroma(L,hue)*satFrac;
+    c=lchToLin(L,C,hue).map(v=>Math.min(1,Math.max(0,v)));
+    const Y=Math.max(1e-6,lum(c));
+    L=Math.min(0.999,Math.max(0.001,L*Math.cbrt(Yt/Y)));
+  }
+  const C=maxChroma(L,hue)*satFrac;
+  return linToHex(lchToLin(L,C,hue));
+}
+
+/* ---------- generation ---------- */
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const wrap=h=>((h%360)+360)%360;
+function mixHue(a,b,t){let d=((b-a+540)%360)-180;return wrap(a+d*t);}
+
+function targetValues(n,hi,lo,dist){
+  const out=[];
+  for(let i=0;i<n;i++){
+    let t=n===1?0:i/(n-1);
+    if(dist==='dark') t=Math.pow(t,0.62);
+    if(dist==='light') t=Math.pow(t,1.6);
+    out.push(hi+(lo-hi)*t);
+  }
+  return out;
+}
+function hues(n,mode,base){
+  const hs=[];
+  for(let i=0;i<n;i++){
+    const t=n===1?0:i/(n-1);
+    let h;
+    switch(mode){
+      case 'analogous': h=base+(t-0.5)*70+rnd(-6,6);break;
+      case 'complementary': h=(t<0.5?base:base+180)+rnd(-14,14);break;
+      case 'split': h=base+[0,150,210][i%3]+rnd(-8,8);break;
+      case 'triad': h=base+[0,120,240][i%3]+rnd(-8,8);break;
+      case 'mono': h=base+rnd(-6,6);break;
+      default: h=rnd(0,360);
+    }
+    hs.push(wrap(h));
+  }
+  return hs;
+}
+
+let state={colors:[],locked:[]};
+let history=[];
+
+function generate(keepLocks=true){
+  const n=+els.count.value, hi=+els.vHi.value, lo=+els.vLo.value;
+  const vals=targetValues(n,hi,lo,els.dist.value);
+  const base=rnd(0,360);
+  let hs=hues(n,els.harmony.value,base);
+  const temp=els.temp.value;
+  hs=hs.map((h,i)=>{
+    const t=n===1?0:i/(n-1);
+    if(temp==='warmLight') return mixHue(h, mixHue(75,265,t), 0.65);
+    if(temp==='coolLight') return mixHue(h, mixHue(230,30,t), 0.65);
+    return h;
+  });
+  const s=+els.sat.value/100, j=+els.jit.value/100;
+  const next=[], nextLocked=[];
+  for(let i=0;i<n;i++){
+    const prevLocked=keepLocks && state.locked[i] && state.colors[i] && state.colors.length===n;
+    if(prevLocked){next.push(state.colors[i]);nextLocked.push(true);continue;}
+    let sf=Math.min(1,Math.max(0,s+rnd(-j,j)*0.6));
+    if(els.mute.checked && (i===0||i===n-1)) sf*=0.45;
+    next.push(makeColor(vals[i],hs[i],sf));
+    nextLocked.push(false);
+  }
+  if(state.colors.length) pushHistory(state.colors);
+  state={colors:next,locked:nextLocked};
+  render();
+  saveSettings();
+}
+
+/* ---------- render ---------- */
+const roles={
+  3:['Luz','Medio','Sombra'],
+  4:['Luz alta','Luz','Sombra','Sombra profunda'],
+  5:['Luz alta','Medio claro','Medio','Medio oscuro','Oscuro profundo']
+};
+function roleFor(i,n){
+  if(roles[n]) return roles[n][i];
+  if(i===0) return 'Luz alta';
+  if(i===n-1) return 'Oscuro profundo';
+  const t=i/(n-1);
+  return t<0.4?'Luz':t<0.6?'Medio':'Sombra';
+}
+function textOn(hex){return valueOfHex(hex)>5.6?'#15171B':'#F4F5F7';}
+
+function render(){
+  const sw=$('swatches'); sw.innerHTML='';
+  const n=state.colors.length;
+  state.colors.forEach((hex,i)=>{
+    const v=valueOfHex(hex);
+    const d=document.createElement('div');
+    d.className='sw'; d.style.background=hex; d.style.color=textOn(hex);
+    d.innerHTML=`<div><div class="vlab">Value</div><div class="v">${v.toFixed(1)}</div></div>
+      <div class="bottom"><span class="role">${roleFor(i,n)}</span>
+      <button class="hex" type="button" title="Copiar">${hex}</button>
+      <button class="lock" type="button" aria-pressed="${!!state.locked[i]}">${state.locked[i]?'Fijado':'Fijar'}</button></div>`;
+    d.querySelector('.hex').addEventListener('click',()=>copy(hex,`${hex} copiado`));
+    d.querySelector('.lock').addEventListener('click',()=>{state.locked[i]=!state.locked[i];render();});
+    sw.appendChild(d);
+  });
+  const g=$('grey'); g.innerHTML='';
+  const vs=state.colors.map(valueOfHex);
+  vs.forEach(v=>{const s=document.createElement('span');s.style.background=greyHex(v);g.appendChild(s);});
+  let minGap=Infinity;for(let i=1;i<vs.length;i++)minGap=Math.min(minGap,Math.abs(vs[i-1]-vs[i]));
+  $('gapInfo').innerHTML = minGap<0.9
+    ? `<strong>Ojo:</strong> dos values están a ${minGap.toFixed(1)} de distancia, pueden confundirse.`
+    : `Salto mínimo entre values: ${minGap.toFixed(1)}`;
+  drawSphere();
+  renderHistory();
+}
+
+/* ---------- light study ---------- */
+function drawSphere(){
+  const cv=$('sphere'), ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,img=ctx.createImageData(W,H);
+  const cols=state.colors.map(h=>{
+    const hex=els.bw.checked?greyHex(valueOfHex(h)):h;
+    return [1,3,5].map(k=>parseInt(hex.slice(k,k+2),16));
+  });
+  const n=cols.length;
+  const cx=W*0.46, cy=H*0.47, R=H*0.3, groundY=cy+R*0.62;
+  let lx=-0.55,ly=-0.6,lz=0.58;const ll=Math.hypot(lx,ly,lz);lx/=ll;ly/=ll;lz/=ll;
+  const shX=cx+R*0.62, shY=cy+R*0.98, shRx=R*1.25, shRy=R*0.24;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    let b;
+    const dx=(x-cx)/R, dy=(y-cy)/R, r2=dx*dx+dy*dy;
+    if(r2<=1){
+      const nz=Math.sqrt(1-r2);
+      const lam=Math.max(0,dx*lx+dy*ly+nz*lz);
+      const rz=2*lam*nz-lz, spec=Math.pow(Math.max(0,rz),30);
+      // reflected light from the ground along the lower-right rim
+      const rim=(lam<0.08)?Math.max(0,dy)*Math.pow(1-nz,0.7)*0.3:0;
+      b=0.05+0.9*lam+rim+spec*0.5;
+    } else if(y>groundY){
+      const ex=(x-shX)/shRx, ey=(y-shY)/shRy;
+      const d=Math.hypot((x-(cx-R*0.9))/W,(y-groundY)/H*1.6);
+      b=(ex*ex+ey*ey<1 && x>cx-R*0.8)?0.02:0.62-0.5*Math.min(1,d*1.4);
+    } else {
+      const d=Math.hypot(x/W,y/H*0.8);
+      b=0.34-0.24*Math.min(1,d);
+    }
+    const idx=Math.min(n-1,Math.max(0,Math.floor((1-Math.min(1,b))*n)));
+    const c=cols[idx],o=(y*W+x)*4;
+    img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+}
+
+/* ---------- history ---------- */
+function pushHistory(cols){
+  const key=cols.join(',');
+  history=history.filter(h=>h.join(',')!==key);
+  history.unshift(cols.slice());
+  history=history.slice(0,8);
+  try{localStorage.setItem('ev-history',JSON.stringify(history));}catch(e){}
+}
+function renderHistory(){
+  const h=$('hist');h.innerHTML='';
+  if(!history.length){h.innerHTML='<span class="empty">Las paletas que generes van a aparecer acá. Tocá una para recuperarla.</span>';return;}
+  history.forEach(cols=>{
+    const b=document.createElement('button');b.type='button';
+    b.setAttribute('aria-label','Recuperar paleta '+cols.join(' '));
+    cols.forEach(c=>{const s=document.createElement('span');s.style.background=c;b.appendChild(s);});
+    b.addEventListener('click',()=>{
+      pushHistory(state.colors);
+      state={colors:cols.slice(),locked:cols.map(()=>false)};
+      els.count.value=cols.length;$('countOut').textContent=cols.length;
+      render();
+    });
+    h.appendChild(b);
+  });
+}
+
+/* ---------- misc ---------- */
+let tt;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1500);}
+function copy(text,msg){
+  try{navigator.clipboard.writeText(text).then(()=>toast(msg),()=>toast(text));}catch(e){toast(text);}
+}
+$('copyAll').addEventListener('click',()=>copy(state.colors.join('\n'),'Hex de la paleta copiados'));
+
+/* ---------- export: Photoshop swatches (.aco) + PNG, zipped ---------- */
+function buildAco(cols){
+  const names=cols.map(h=>`Value ${valueOfHex(h).toFixed(1)} ${h}`);
+  let size=4+cols.length*10+4;
+  names.forEach(n=>size+=10+4+(n.length+1)*2);
+  const buf=new ArrayBuffer(size),dv=new DataView(buf);let o=0;
+  const u16=v=>{dv.setUint16(o,v);o+=2;};
+  const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)*257);
+  const writeColor=h=>{u16(0);rgb(h).forEach(u16);u16(0);};
+  u16(1);u16(cols.length);cols.forEach(writeColor);
+  u16(2);u16(cols.length);
+  cols.forEach((h,i)=>{writeColor(h);const n=names[i];dv.setUint32(o,n.length+1);o+=4;for(const ch of n)u16(ch.charCodeAt(0));u16(0);});
+  return new Uint8Array(buf);
+}
+function palettePng(cols){
+  return new Promise(res=>{
+    const w=120,hgt=160,c=document.createElement('canvas');c.width=w*cols.length;c.height=hgt;
+    const x=c.getContext('2d');cols.forEach((h,i)=>{x.fillStyle=h;x.fillRect(i*w,0,w,hgt);});
+    c.toBlob(b=>b.arrayBuffer().then(a=>res(new Uint8Array(a))),'image/png');
+  });
+}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(d){let c=0xFFFFFFFF;for(let i=0;i<d.length;i++)c=CRC[(c^d[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function makeZip(files){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  files.forEach(f=>{
+    const name=enc.encode(f.name),crc=crc32(f.data),n=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30));
+    [[0,0x04034b50,4],[4,20,2],[6,0,2],[8,0,2],[10,0,2],[12,0x21,2],[14,crc,4],[18,n,4],[22,n,4],[26,name.length,2],[28,0,2]]
+      .forEach(([p,v,s])=>s===4?lh.setUint32(p,v,true):lh.setUint16(p,v,true));
+    parts.push(new Uint8Array(lh.buffer),name,f.data);
+    const ch=new DataView(new ArrayBuffer(46));
+    [[0,0x02014b50,4],[4,20,2],[6,20,2],[8,0,2],[10,0,2],[12,0,2],[14,0x21,2],[16,crc,4],[20,n,4],[24,n,4],[28,name.length,2],[30,0,2],[32,0,2],[34,0,2],[36,0,2],[38,0,4],[42,off,4]]
+      .forEach(([p,v,s])=>s===4?ch.setUint32(p,v,true):ch.setUint16(p,v,true));
+    central.push(new Uint8Array(ch.buffer),name);
+    off+=30+name.length+n;
+  });
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const end=new DataView(new ArrayBuffer(22));
+  [[0,0x06054b50,4],[4,0,2],[6,0,2],[8,files.length,2],[10,files.length,2],[12,cdSize,4],[16,off,4],[20,0,2]]
+    .forEach(([p,v,s])=>s===4?end.setUint32(p,v,true):end.setUint16(p,v,true));
+  return new Blob([...parts,...central,new Uint8Array(end.buffer)]);
+}
+(async()=>{
+  const inClaude=!!(window.claude&&window.claude.use);
+  const dl=inClaude?await window.claude.use('downloads'):{
+    save:async({filename,data})=>{const u=URL.createObjectURL(data);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return {status:'saved'};}
+  };
+  if(!dl) return;
+  const btn=$('exportCsp');btn.hidden=false;
+  btn.addEventListener('click',async()=>{
+    const cols=state.colors.slice();
+    const zip=makeZip([{name:'escala-de-values.aco',data:buildAco(cols)},{name:'escala-de-values.png',data:await palettePng(cols)}]);
+    try{await dl.save({filename:'escala-de-values.zip',data:zip});toast('Descargado. Arrastrá el .aco al panel Set de colores');}
+    catch(e){if(e&&e.code==='declined')return;toast(e&&e.code==='rate_limited'?'Ya hay una descarga abierta':'No se pudo descargar en esta vista');}
+  });
+})();
+$('gen').addEventListener('click',()=>generate());
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space' && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)){e.preventDefault();generate();}
+});
+
+const outs={count:v=>v,vHi:v=>v,vLo:v=>v,sat:v=>v+'%',jit:v=>v+'%'};
+Object.keys(outs).forEach(k=>{
+  els[k].addEventListener('input',()=>{
+    $(k+'Out').textContent=outs[k](els[k].value);
+    if(k==='vHi'&&+els.vHi.value<=+els.vLo.value){els.vLo.value=Math.max(0,+els.vHi.value-1);$('vLoOut').textContent=els.vLo.value;}
+    if(k==='vLo'&&+els.vLo.value>=+els.vHi.value){els.vHi.value=Math.min(10,+els.vLo.value+1);$('vHiOut').textContent=els.vHi.value;}
+  });
+  els[k].addEventListener('change',()=>generate());
+});
+['dist','harmony','temp','mute'].forEach(k=>els[k].addEventListener('change',()=>generate()));
+els.bw.addEventListener('change',drawSphere);
+
+function saveSettings(){
+  try{const s={};['count','vHi','vLo','dist','harmony','temp','sat','jit'].forEach(k=>s[k]=els[k].value);s.mute=els.mute.checked;s.colors=state.colors;
+    localStorage.setItem('ev-settings',JSON.stringify(s));}catch(e){}
+}
+function loadSettings(){
+  try{
+    const h=JSON.parse(localStorage.getItem('ev-history')||'[]');if(Array.isArray(h))history=h;
+    const s=JSON.parse(localStorage.getItem('ev-settings')||'null');
+    if(s){['count','vHi','vLo','dist','harmony','temp','sat','jit'].forEach(k=>{if(s[k]!=null)els[k].value=s[k];});els.mute.checked=!!s.mute;
+      Object.keys(outs).forEach(k=>$(k+'Out').textContent=outs[k](els[k].value));
+      if(Array.isArray(s.colors)&&s.colors.length)return s.colors;}
+  }catch(e){}
+  return null;
+}
+
+const saved=loadSettings();
+/* first visit: start with the palette from the chat */
+const start=saved||['#F2E3B3','#D98E73','#4F7A6B','#6B3A5A','#1E1B3A'];
+state={colors:start,locked:start.map(()=>false)};
+els.count.value=start.length;$('countOut').textContent=start.length;
+render();
+})();
+</script>
+</body>
+</html>
