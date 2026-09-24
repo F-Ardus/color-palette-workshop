@@ -1,25 +1,29 @@
 // DOM wiring: reads the settings, keeps the current palette and history, renders.
 
 import { greyHex, textOn, valueOfHex } from './color.js';
-import { GAP_WARN, generatePalette, minGap, roleFor } from './palette.js';
+import { adjustPalette, GAP_WARN, generatePalette, minGap, rankOf, rerollColor, roleFor, setColorValue, sortPalette } from './palette.js';
 import { addToHistory, load, removeFromHistory, saveHistory, saveSettings } from './storage.js';
 import { drawSphere } from './sphere.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
+import { icon, setIcon } from './icons.js';
 
 const $ = id => document.getElementById(id);
 const els = {
   count: $('count'), vHi: $('vHi'), vLo: $('vLo'), dist: $('dist'), harmony: $('harmony'),
   temp: $('temp'), sat: $('sat'), jit: $('jit'), mute: $('mute'), bw: $('bw'),
+  scale: $('scale'), keep: $('keep'), order: $('order'),
 };
 const NUMERIC = ['count', 'vHi', 'vLo', 'sat', 'jit'];
 const SELECTS = ['dist', 'harmony', 'temp'];
-const CHECKS = ['mute', 'bw'];
+const CHECKS = ['mute', 'bw', 'scale', 'keep', 'order'];
+// Changing these always rolls new hues, even with "Mantener tonos" on.
+const REROLLS = new Set(['harmony', 'temp']);
 const outs = { count: v => v, vHi: v => v, vLo: v => v, sat: v => v + '%', jit: v => v + '%' };
 
 // Shown on a first visit, before anything has been generated.
 const FIRST_PALETTE = ['#F2E3B3', '#D98E73', '#4F7A6B', '#6B3A5A', '#1E1B3A'];
 
-let palette = { colors: [], locked: [] };
+let palette = { colors: [], locked: [], recipes: null };
 let history = [];
 
 function readSettings() {
@@ -33,6 +37,13 @@ function writeSettings(s) {
   [...NUMERIC, ...SELECTS].forEach(k => { els[k].value = s[k]; });
   CHECKS.forEach(k => { els[k].checked = s[k]; });
   updateOutputs();
+  updateScaleFields();
+}
+// "Reparto" only means something when values are scaled; the order toggle only
+// when they aren't (scaled palettes are always light to dark).
+function updateScaleFields() {
+  $('distField').hidden = !els.scale.checked;
+  $('cardsBar').hidden = els.scale.checked;
 }
 function updateOutputs() {
   Object.keys(outs).forEach(k => { $(k + 'Out').textContent = outs[k](els[k].value); });
@@ -40,7 +51,7 @@ function updateOutputs() {
 const persist = () => saveSettings(readSettings(), palette);
 
 function setPalette(next) {
-  palette = { colors: next.colors, locked: next.locked };
+  palette = { colors: next.colors, locked: next.locked, recipes: next.recipes ?? null };
   els.count.value = palette.colors.length;
   updateOutputs();
   render();
@@ -48,11 +59,34 @@ function setPalette(next) {
 }
 
 function generate() {
-  const { colors, locked, dropped } = generatePalette(readSettings(), palette);
+  const next = generatePalette(readSettings(), palette);
   if (palette.colors.length) { history = addToHistory(history, palette.colors); saveHistory(history); }
-  setPalette({ colors, locked });
+  apply(next);
+}
+
+// Same hues, new settings. Not added to the history: it's an edit, not a new palette.
+function adjust() {
+  apply(adjustPalette(readSettings(), palette));
+}
+
+function apply({ colors, locked, recipes, dropped }) {
+  setPalette({ colors, locked, recipes });
   announce();
   if (dropped) toast(dropped === 1 ? 'Se soltó un color fijado: no entraba en la escala' : `Se soltaron ${dropped} colores fijados: no entraban en la escala`);
+}
+
+function onSettingChange(key) {
+  if (els.keep.checked && !REROLLS.has(key)) adjust();
+  else generate();
+}
+
+// New hue for one color, same value. An edit like adjust(): no history entry.
+function reroll(i) {
+  const keepFocus = document.activeElement?.classList.contains('reroll');
+  const next = rerollColor(readSettings(), palette, i);
+  setPalette(next);
+  if (keepFocus) $('swatches').children[i]?.querySelector('.reroll')?.focus();
+  toast(`Color nuevo: ${next.colors[i]}`);
 }
 
 function restore(cols) {
@@ -74,9 +108,19 @@ function button(className, text) {
   b.type = 'button';
   return b;
 }
-function setLock(btn, on) {
+function iconButton(className, name, label) {
+  const b = button('tool ' + className);
+  b.append(icon(name));
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  return b;
+}
+function setLock(btn, rerollBtn, on) {
   btn.setAttribute('aria-pressed', String(on));
-  btn.textContent = on ? 'Fijado' : 'Fijar';
+  btn.title = on ? 'Fijado: no cambia al generar' : 'Fijar';
+  setIcon(btn, on ? 'lock' : 'lock-open');
+  // A locked color can't be rerolled either.
+  rerollBtn.disabled = on;
 }
 
 function render() {
@@ -86,36 +130,93 @@ function render() {
   renderHistory();
 }
 
+// One repaint function per card, so a drag can refresh every card's role in place.
+let painters = [];
+
 function renderSwatches() {
   const n = palette.colors.length;
-  $('swatches').replaceChildren(...palette.colors.map((hex, i) => {
-    const v = valueOfHex(hex);
-    const sw = el('div', 'sw');
+  painters = [];
+  $('swatches').replaceChildren(...palette.colors.map((_, i) => swatch(i, n)));
+}
+
+function swatch(i, n) {
+  const sw = el('div', 'sw');
+  const vText = el('div', 'v');
+  const role = el('span', 'role');
+  const hexBtn = button('hex');
+  hexBtn.title = 'Copiar';
+  hexBtn.addEventListener('click', () => copy(palette.colors[i], `${palette.colors[i]} copiado`));
+  const again = iconButton('reroll', 'refresh-cw', '');
+  again.addEventListener('click', () => reroll(i));
+  const lock = iconButton('lock', 'lock-open', '');
+
+  const top = el('div', 'top');
+  top.append(el('div', 'vlab', 'Value'), vText);
+
+  // Without scaling, each color's value can be set by hand. The card is
+  // repainted in place while dragging; the palette is re-sorted on release.
+  let range = null;
+  if (!els.scale.checked) {
+    range = el('input', 'value-range');
+    Object.assign(range, { type: 'range', min: els.vLo.value, max: els.vHi.value, step: 0.1 });
+    range.addEventListener('input', () => {
+      const next = setColorValue(readSettings(), palette, i, +range.value);
+      palette = { ...palette, colors: next.colors, recipes: next.recipes };
+      painters.forEach(p => p());
+      renderGrey();
+      drawSphere($('sphere'), palette.colors, { grey: els.bw.checked });
+    });
+    range.addEventListener('change', () => settleValue(i));
+    top.append(range);
+  }
+
+  function paint() {
+    const hex = palette.colors[i], v = valueOfHex(hex);
     sw.style.background = hex;
     sw.style.color = textOn(hex);
-
-    const top = el('div');
-    top.append(el('div', 'vlab', 'Value'), el('div', 'v', v.toFixed(1)));
-
-    const hexBtn = button('hex', hex);
-    hexBtn.title = 'Copiar';
-    hexBtn.addEventListener('click', () => copy(hex, `${hex} copiado`));
-
-    // Toggled in place: re-rendering would drop keyboard focus.
-    const lock = button('lock');
+    vText.textContent = v.toFixed(1);
+    role.textContent = roleFor(rankOf(palette.colors.map(valueOfHex), i), n, v);
+    hexBtn.textContent = hex;
+    again.setAttribute('aria-label', `Otro color con value ${v.toFixed(1)}`);
+    again.title = again.getAttribute('aria-label');
     lock.setAttribute('aria-label', `Fijar ${hex}`);
-    setLock(lock, palette.locked[i]);
-    lock.addEventListener('click', () => {
-      palette.locked[i] = !palette.locked[i];
-      setLock(lock, palette.locked[i]);
-      persist();
-    });
+    if (range) {
+      range.value = v.toFixed(1);
+      range.setAttribute('aria-label', `Value de ${hex}`);
+      range.setAttribute('aria-valuetext', v.toFixed(1));
+    }
+  }
+  function setLocked(on) {
+    setLock(lock, again, on);
+    if (range) range.disabled = on;
+  }
 
-    const bottom = el('div', 'bottom');
-    bottom.append(el('span', 'role', roleFor(i, n, v)), hexBtn, lock);
-    sw.append(top, bottom);
-    return sw;
-  }));
+  // Toggled in place: re-rendering would drop keyboard focus.
+  lock.addEventListener('click', () => {
+    palette.locked[i] = !palette.locked[i];
+    setLocked(palette.locked[i]);
+    persist();
+  });
+
+  const tools = el('div', 'tools');
+  tools.append(again, lock);
+  const bottom = el('div', 'bottom');
+  bottom.append(role, hexBtn, tools);
+  sw.append(top, bottom);
+  painters.push(paint);
+  paint();
+  setLocked(palette.locked[i]);
+  return sw;
+}
+
+// After a manual value change: back in light-to-dark order if "Ordenar por
+// value" is on, saved, and the slider keeps focus wherever its card ended up.
+function settleValue(i) {
+  const hex = palette.colors[i];
+  const hadFocus = document.activeElement?.classList.contains('value-range');
+  const next = els.order.checked ? sortPalette(palette) : palette;
+  setPalette(next);
+  if (hadFocus) $('swatches').children[next.colors.indexOf(hex)]?.querySelector('.value-range')?.focus();
 }
 
 function renderGrey() {
@@ -126,7 +227,8 @@ function renderGrey() {
     return s;
   }));
   const gap = minGap(vs), info = $('gapInfo');
-  if (gap < GAP_WARN) info.replaceChildren(el('strong', null, 'Ojo:'), ` dos values están a ${gap.toFixed(1)} de distancia, pueden confundirse.`);
+  if (!els.scale.checked) info.textContent = '';
+  else if (gap < GAP_WARN) info.replaceChildren(el('strong', null, 'Ojo:'), ` dos values están a ${gap.toFixed(1)} de distancia, pueden confundirse.`);
   else info.textContent = `Salto mínimo entre values: ${gap.toFixed(1)}`;
 }
 
@@ -156,7 +258,7 @@ function toast(msg) {
 }
 // Screen readers hear a short summary instead of the whole swatch grid.
 function announce() {
-  $('announce').textContent = 'Paleta nueva. Values: ' + palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', ');
+  $('announce').textContent = 'Paleta: values ' + palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', ');
 }
 function copy(text, msg) {
   try { navigator.clipboard.writeText(text).then(() => toast(msg), () => toast(text)); } catch { toast(text); }
@@ -170,10 +272,10 @@ $('exportCsp').addEventListener('click', async () => {
   const cols = palette.colors.slice();
   try {
     const zip = makeZip([
-      { name: 'escala-de-values.aco', data: buildAco(cols) },
-      { name: 'escala-de-values.png', data: await palettePng(cols) },
+      { name: 'palettekit.aco', data: buildAco(cols) },
+      { name: 'palettekit.png', data: await palettePng(cols) },
     ]);
-    download(zip, 'escala-de-values.zip', 'application/zip');
+    download(zip, 'palettekit.zip', 'application/zip');
     toast('Descargado. Arrastrá el .aco al panel Set de colores');
   } catch {
     toast('No se pudo armar el archivo');
@@ -182,7 +284,7 @@ $('exportCsp').addEventListener('click', async () => {
 
 document.addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.ctrlKey || e.metaKey || e.altKey) return;
-  if (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(document.activeElement?.tagName ?? '')) return;
+  if (/^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/.test(document.activeElement?.tagName ?? '')) return;
   e.preventDefault();
   // Holding the key would flood the history with dozens of palettes.
   if (!e.repeat) generate();
@@ -195,9 +297,15 @@ Object.keys(outs).forEach(k => {
     if (k === 'vLo' && +els.vLo.value >= +els.vHi.value) els.vHi.value = Math.min(10, +els.vLo.value + 1);
     updateOutputs();
   });
-  els[k].addEventListener('change', generate);
+  els[k].addEventListener('change', () => onSettingChange(k));
 });
-[...SELECTS, 'mute'].forEach(k => els[k].addEventListener('change', generate));
+[...SELECTS, 'mute'].forEach(k => els[k].addEventListener('change', () => onSettingChange(k)));
+els.scale.addEventListener('change', () => { updateScaleFields(); onSettingChange('scale'); });
+els.keep.addEventListener('change', persist);
+els.order.addEventListener('change', () => {
+  if (els.order.checked) setPalette(sortPalette(palette));
+  else persist();
+});
 els.bw.addEventListener('change', () => {
   drawSphere($('sphere'), palette.colors, { grey: els.bw.checked });
   persist();

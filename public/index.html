@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Escala de Values</title>
-<meta name="description" content="Generador de paletas con escala de values para dibujar en claroscuro.">
+<title>Generador de paletas · Palettekit</title>
+<meta name="description" content="Generador de paletas por armonía de tonos, con la opción de que cada color ocupe un escalón de value distinto para dibujar en claroscuro. Parte de Palettekit.">
 <meta name="theme-color" content="#ECEDEF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15171B" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://palettekit.fardus.dev/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Escala de Values">
-<meta property="og:description" content="Paletas donde cada color ocupa un escalón de value distinto. Pensado para retratos en claroscuro.">
-<meta property="og:url" content="https://values.fardus.dev/">
-<meta property="og:image" content="https://values.fardus.dev/icon-512.png">
+<meta property="og:site_name" content="Palettekit">
+<meta property="og:title" content="Generador de paletas · Palettekit">
+<meta property="og:description" content="Paletas por armonía de tonos, con la opción de escalonar los values para dibujar en claroscuro.">
+<meta property="og:url" content="https://palettekit.fardus.dev/">
+<meta property="og:image" content="https://palettekit.fardus.dev/icon-512.png">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -19,32 +21,66 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="styles.css">
+<script type="module" src="js/nav.js"></script>
 <script type="module" src="js/app.js"></script>
 </head>
 <body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/">
+    <img src="logo.svg" alt="" width="32" height="33">
+    <span>Palettekit</span>
+  </a>
+  <nav aria-label="Herramientas">
+    <p class="nav-h">Herramientas</p>
+    <ul>
+      <li>
+        <a href="/" aria-current="page">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>
+          Generador de paletas
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <p class="sidebar-foot">Herramientas para armar tus propias paletas.</p>
+</aside>
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="content">
+<div class="topbar">
+  <button id="menuBtn" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú">
+    <svg class="icon" aria-hidden="true"><use href="/icons.svg#menu"/></svg>
+  </button>
+  <a class="brand" href="/">
+    <img src="logo.svg" alt="" width="26" height="27">
+    <span>Palettekit</span>
+  </a>
+</div>
 <div class="wrap">
   <header>
-    <div class="brand">
-      <img class="logo" src="logo.svg" alt="" width="68" height="70">
-      <div>
-        <h1>Escala de Values</h1>
-        <p class="lede">Paletas donde cada color ocupa un escalón de value distinto, de la luz alta a la sombra más profunda. Pensado para retratos en claroscuro.</p>
-      </div>
+    <div>
+      <h1>Generador de paletas</h1>
+      <p class="lede">Paletas por armonía de tonos. Si escalás los values, cada color ocupa un escalón distinto, de la luz alta a la sombra más profunda: ideal para retratos en claroscuro.</p>
     </div>
     <div class="actions">
-      <button id="copyAll" type="button">Copiar hex</button>
-      <button id="exportCsp" type="button" title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta">Exportar a Clip Studio</button>
-      <button id="gen" class="primary" type="button">Generar <kbd>espacio</kbd></button>
+      <button id="copyAll" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#copy"/></svg>Copiar hex</button>
+      <button id="exportCsp" type="button" title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta"><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg>Exportar a Clip Studio</button>
+      <button id="gen" class="primary" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#dices"/></svg>Generar <kbd>espacio</kbd></button>
     </div>
   </header>
 
   <div class="layout">
     <aside class="controls" aria-label="Ajustes">
-      <h2>Ajustes</h2>
+      <h2><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg>Ajustes</h2>
+      <label class="check"><input id="keep" type="checkbox"> Mantener tonos</label>
+      <span class="hint">Los ajustes corrigen la paleta actual sin cambiar sus tonos. Generar, la armonía o la temperatura sortean tonos nuevos.</span>
+      <hr>
       <div class="field">
         <label for="count">Cantidad de colores <output id="countOut">5</output></label>
         <input id="count" type="range" min="3" max="9" step="1" value="5">
       </div>
+      <label class="check"><input id="scale" type="checkbox" checked> Escalar values</label>
+      <span class="hint">Cada color ocupa un escalón de value distinto. Sin esto, cada uno toma un value al azar dentro del rango.</span>
       <div class="field">
         <label for="vHi">Value más claro <output id="vHiOut">9</output></label>
         <input id="vHi" type="range" min="5" max="10" step="0.5" value="9">
@@ -53,7 +89,7 @@
         <label for="vLo">Value más oscuro <output id="vLoOut">1</output></label>
         <input id="vLo" type="range" min="0" max="5" step="0.5" value="1">
       </div>
-      <div class="field">
+      <div class="field" id="distField">
         <label for="dist">Reparto de los values</label>
         <select id="dist">
           <option value="linear">Parejo</option>
@@ -95,11 +131,14 @@
     </aside>
 
     <section class="main">
+      <div class="cards-bar" id="cardsBar">
+        <label class="toggle-pill"><input id="order" type="checkbox" checked><svg class="icon" aria-hidden="true"><use href="/icons.svg#arrow-down-wide-narrow"/></svg>Ordenar por value</label>
+      </div>
       <div id="swatches" class="swatches"></div>
 
       <div class="gray-wrap">
         <div class="row">
-          <span class="section-h">Prueba en blanco y negro</span>
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg>Prueba en blanco y negro</span>
           <span class="warn" id="gapInfo"></span>
         </div>
         <div id="grey" class="grey" aria-hidden="true"></div>
@@ -108,7 +147,7 @@
       <div class="lower">
         <div class="card">
           <div class="row">
-            <span class="section-h">Estudio de luz</span>
+            <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sun"/></svg>Estudio de luz</span>
             <label class="check"><input id="bw" type="checkbox"> Ver en grises</label>
           </div>
           <canvas id="sphere" width="520" height="400" role="img" aria-label="Esfera iluminada desde arriba a la izquierda, pintada solo con los colores de la paleta"></canvas>
@@ -119,12 +158,14 @@
           </ul>
         </div>
         <div class="card">
-          <span class="section-h">Paletas anteriores</span>
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#history"/></svg>Paletas anteriores</span>
           <div id="hist" class="hist"></div>
         </div>
       </div>
     </section>
   </div>
+</div>
+</div>
 </div>
 <div id="toast" class="toast" role="status"></div>
 <div id="announce" class="sr-only" aria-live="polite"></div>

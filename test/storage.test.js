@@ -17,7 +17,7 @@ test('reads the original format (input strings, no locks)', () => {
     sat: '40', jit: '10', mute: true, colors: PAL.map(h => h.toLowerCase()),
   };
   const { settings, palette } = sanitizeSettings(legacy);
-  assert.deepEqual(settings, { count: 5, vHi: 8.5, vLo: 0.5, dist: 'dark', harmony: 'triad', temp: 'warmLight', sat: 40, jit: 10, mute: true, bw: false });
+  assert.deepEqual(settings, { count: 5, vHi: 8.5, vLo: 0.5, dist: 'dark', scale: true, harmony: 'triad', temp: 'warmLight', sat: 40, jit: 10, mute: true, bw: false, keep: false, order: true });
   assert.deepEqual(palette, { colors: PAL, locked: [false, false, false, false, false] });
 });
 
@@ -71,4 +71,15 @@ test('load and saveSettings round-trip, and survive a throwing storage', () => {
   const broken = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
   assert.deepEqual(load(broken), { settings: { ...DEFAULTS }, palette: null, history: [] });
   assert.doesNotThrow(() => saveSettings(DEFAULTS, { colors: PAL, locked: [] }, broken));
+});
+
+test('recipes, scale and keep round-trip; bad recipes are dropped', () => {
+  const recipes = PAL.map((_, i) => ({ hue: i * 70, jitter: -0.5, pick: 1 - i / 4 }));
+  const { settings, palette } = sanitizeSettings({ colors: PAL, recipes, scale: false, keep: true });
+  assert.equal(settings.scale, false);
+  assert.equal(settings.keep, true);
+  assert.deepEqual(palette.recipes, recipes);
+  const bad = sanitizeSettings({ colors: PAL, recipes: [...recipes.slice(0, 4), { hue: 'x', jitter: 0, pick: 0 }] });
+  assert.equal(bad.palette.recipes, undefined);
+  assert.equal(sanitizeSettings({ colors: PAL }).settings.scale, true, 'scaled by default');
 });

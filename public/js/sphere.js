@@ -10,7 +10,9 @@ export const bandIndex = (b, n) => Math.min(n - 1, Math.max(0, Math.floor((1 - M
 export function drawSphere(canvas, colors, { grey = false } = {}) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height, img = ctx.createImageData(W, H);
-  const rgb = colors.map(h => hexToRgb(grey ? greyHex(valueOfHex(h)) : h));
+  // Light to dark regardless of how the cards are arranged: band 0 is the highlight.
+  const byValue = colors.map(h => ({ h, v: valueOfHex(h) })).sort((x, y) => y.v - x.v);
+  const rgb = byValue.map(({ h, v }) => hexToRgb(grey ? greyHex(v) : h));
   const bandOf = b => rgb[bandIndex(b, rgb.length)];
 
   const cx = W * 0.46, cy = H * 0.47, R = H * 0.3, groundY = cy + R * 0.62;

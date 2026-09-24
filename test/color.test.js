@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contrast, greyHex, isHex, makeColor, textOn, TEXT_DARK, TEXT_LIGHT, valueOfHex } from '../public/js/color.js';
+import { contrast, greyHex, hueOfHex, isHex, makeColor, satOfHex, textOn, TEXT_DARK, TEXT_LIGHT, valueOfHex } from '../public/js/color.js';
 
 test('makeColor lands on the requested value across hues and saturations', () => {
   let worst = 0;
@@ -37,4 +37,15 @@ test('textOn picks the text color with the higher contrast', () => {
   }
   // Mid greys around value 5.3 used to get light text at ~3.7:1.
   assert.equal(textOn(greyHex(5.3)), TEXT_DARK);
+});
+
+test('hueOfHex and satOfHex read back what makeColor was given', () => {
+  for (const h of [20, 95, 150, 230, 300])
+    for (const s of [0.4, 0.8]) {
+      const hex = makeColor(5, h, s);
+      const dh = Math.abs(((hueOfHex(hex) - h + 540) % 360) - 180);
+      assert.ok(dh < 2, `hue ${h} came back ${hueOfHex(hex)}`);
+      assert.ok(Math.abs(satOfHex(hex) - s) < 0.05, `sat ${s} came back ${satOfHex(hex)}`);
+    }
+  assert.equal(satOfHex('#808080') < 0.01, true);
 });

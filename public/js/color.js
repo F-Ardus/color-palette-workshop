@@ -13,6 +13,17 @@ export function oklabToLin(L, a, b) {
   ];
 }
 
+export function linToOklab([r, g, b]) {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+  ];
+}
+
 export function lchToLin(L, C, h) {
   const r = h * Math.PI / 180;
   return oklabToLin(L, C * Math.cos(r), C * Math.sin(r));
@@ -47,6 +58,18 @@ export const hexToLin = h => hexToRgb(h).map(v => decode(v / 255));
 export const linToHex = c => ('#' + c.map(byteHex).join('')).toUpperCase();
 
 export const valueOfHex = h => lstarFromY(luminance(hexToLin(h))) / 10;
+
+// OKLCH hue (degrees) and saturation as makeColor understands it: chroma as a
+// fraction of the widest in-gamut chroma at that lightness and hue.
+export function hueOfHex(h) {
+  const [, a, b] = linToOklab(hexToLin(h));
+  return ((Math.atan2(b, a) * 180 / Math.PI) + 360) % 360;
+}
+export function satOfHex(h) {
+  const [L, a, b] = linToOklab(hexToLin(h));
+  const max = maxChroma(L, hueOfHex(h));
+  return max > 1e-4 ? Math.min(1, Math.hypot(a, b) / max) : 0;
+}
 
 export function greyHex(value) {
   const g = byteHex(yFromLstar(value * 10));
