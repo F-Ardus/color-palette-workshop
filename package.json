@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx wrangler dev",
+    "sync": "node scripts/partials.mjs",
     "test": "node --test \"test/*.test.js\""
   },
   "engines": {

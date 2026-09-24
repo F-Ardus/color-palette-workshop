@@ -53,15 +53,23 @@ function save() {
   $('undoBtn').disabled = !undoStack.length;
 }
 
+function savedColors() {
+  try { return parseHexList((JSON.parse(localStorage.getItem(STORE_KEY))?.colors ?? []).join(' ')); } catch { return []; }
+}
+
+// A palette in the URL (a shared link, or sent by another tool) wins; the one
+// the user had goes on the undo stack so it isn't lost.
 function initialColors() {
   const fromUrl = colorsFromParam(new URLSearchParams(location.search).get('colors'));
-  if (fromUrl.length) return fromUrl;
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    const cols = parseHexList((saved?.colors ?? []).join(' '));
-    if (cols.length) return cols;
-  } catch { /* nothing saved */ }
-  return randomPalette(RANDOM_DEFAULT);
+  const saved = savedColors();
+  if (fromUrl.length) {
+    if (saved.length && !same(saved, fromUrl)) {
+      undoStack.push(saved);
+      setTimeout(() => toast(t('create.replacedUndo')), 400);
+    }
+    return fromUrl;
+  }
+  return saved.length ? saved : randomPalette(RANDOM_DEFAULT);
 }
 
 /* ---------- making colors ---------- */
@@ -102,13 +110,49 @@ function removeColor(i) {
   (cards[Math.min(i, cards.length - 1)]?.querySelector('.remove') ?? $('swatches').querySelector('.add-card'))?.focus();
   toast(t('create.removed', { hex }));
 }
-function move(i, dir) {
+function move(i, dir, focusSel = dir < 0 ? '.before' : '.after') {
   const j = i + dir;
   if (j < 0 || j >= colors.length) return;
   const next = colors.slice();
   [next[i], next[j]] = [next[j], next[i]];
   commit(next);
-  $('swatches').children[j]?.querySelector(dir < 0 ? '.before' : '.after')?.focus();
+  $('swatches').children[j]?.querySelector(focusSel)?.focus();
+}
+
+// Dragging a card by its grip reorders the palette, with a mouse, pen or
+// finger. Cards move in the page while dragging; the new order is committed
+// (one undo step) when the pointer is released.
+function startDrag(e) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  const grid = $('swatches');
+  const cards = () => [...grid.querySelectorAll('.sw:not(.add-card)')];
+  const dragged = e.currentTarget.closest('.sw');
+  dragged.classList.add('dragging');
+  grid.classList.add('reordering');
+  const onMove = ev => {
+    const target = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.sw:not(.add-card)');
+    if (!target || target === dragged || target.parentElement !== grid) return;
+    const list = cards();
+    const from = list.indexOf(dragged), to = list.indexOf(target);
+    grid.insertBefore(dragged, to > from ? target.nextSibling : target);
+  };
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+    dragged.classList.remove('dragging');
+    grid.classList.remove('reordering');
+    const next = cards().map(c => colors[+c.dataset.index]);
+    if (same(next, colors)) return;
+    const hex = colors[+dragged.dataset.index];
+    commit(next);
+    $('swatches').children[next.indexOf(hex)]?.querySelector('.grip')?.focus();
+    announce(t('create.moved', { hex }));
+  };
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
 }
 function sortByValue() {
   commit([...colors].sort((a, b) => valueOfHex(b) - valueOfHex(a)));
@@ -159,6 +203,7 @@ function renderShared() {
 
 function card(i, n) {
   const sw = el('div', 'sw');
+  sw.dataset.index = i;
   const vText = el('div', 'v');
   const top = el('div', 'top');
   top.append(el('div', 'vlab', t('common.value')), vText);
@@ -223,8 +268,17 @@ function card(i, n) {
   copyBtn.addEventListener('click', () => copy(colors[i], t('common.copied', { hex: colors[i] })));
   const removeBtn = iconButton('remove', 'trash-2', t('create.remove'));
   removeBtn.addEventListener('click', () => removeColor(i));
+  // The grip drags; with the keyboard, its arrow keys move the color.
+  const grip = iconButton('grip', 'grip-vertical', t('create.dragHandle'));
+  grip.addEventListener('pointerdown', startDrag);
+  grip.addEventListener('keydown', e => {
+    const dir = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+    if (!dir) return;
+    e.preventDefault();
+    move(i, dir, '.grip');
+  });
   const tools = el('div', 'tools');
-  tools.append(beforeBtn, afterBtn, copyBtn, removeBtn);
+  tools.append(grip, beforeBtn, afterBtn, copyBtn, removeBtn);
 
   const bottom = el('div', 'bottom');
   bottom.append(edit, tools);
@@ -243,8 +297,8 @@ const imageBlob = () => new Promise((resolve, reject) => {
 $('downloadImg').addEventListener('click', async () => {
   try {
     download(await imageBlob(), 'palettekit-paleta.png', 'image/png');
-    toast(t('create.imageDownloaded'));
-  } catch { toast(t('create.imageFailed')); }
+    toast(t('common.imageDownloaded'));
+  } catch { toast(t('common.imageFailed')); }
 });
 
 // On phones the share sheet is the natural way; elsewhere, copy the link.

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- shared:head -->
+<script>
+/* Hides the page until js/i18n.js has translated it, when the language isn't
+   the markup's (Spanish). Mirrors detect() in js/i18n.js; the timeout keeps
+   the page from staying hidden if scripts fail. */
+(function(){try{var l=localStorage.getItem('pk-lang');if(l!=='es'&&l!=='en'){l='en';var ls=navigator.languages||[navigator.language];for(var i=0;i<ls.length;i++){var c=(ls[i]||'').slice(0,2).toLowerCase();if(c==='es'||c==='en'){l=c;break}}}if(l!=='es'){var d=document.documentElement;d.classList.add('i18n-loading');setTimeout(function(){d.classList.remove('i18n-loading')},2500)}}catch(e){}})();
+</script>
+<meta name="theme-color" content="#ECEDEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171B" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/js/nav.js"></script>
+<!-- /shared:head -->
+<title data-i18n="values.pageTitle">Chequeo de values · Palettekit</title>
+<meta name="description" data-i18n-attr="content:values.description" content="Reducí una referencia o tu dibujo a pocos values, con los ojos entrecerrados, para ver si el claroscuro se lee. Parte de Palettekit.">
+<link rel="canonical" href="https://palettekit.fardus.dev/values/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Palettekit">
+<meta property="og:title" content="Chequeo de values · Palettekit">
+<meta property="og:description" content="Tu referencia o tu dibujo reducidos a pocos values, para ver si el claroscuro se lee.">
+<meta property="og:url" content="https://palettekit.fardus.dev/values/">
+<meta property="og:image" content="https://palettekit.fardus.dev/icon-512.png">
+<script type="module" src="/js/values-app.js"></script>
+</head>
+<body>
+<div class="app">
+<!-- shared:sidebar -->
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/">
+    <img src="/logo.svg" alt="" width="32" height="33">
+    <span>Palettekit</span>
+  </a>
+  <nav aria-label="Herramientas" data-i18n-attr="aria-label:nav.tools">
+    <p class="nav-h" data-i18n="nav.tools">Herramientas</p>
+    <ul>
+      <li>
+        <a href="/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>
+          <span data-i18n="nav.generator">Generador de paletas</span>
+        </a>
+      </li>
+      <li>
+        <a href="/foto/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg>
+          <span data-i18n="nav.photo">Paleta desde una foto</span>
+        </a>
+      </li>
+      <li>
+        <a href="/crear/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#swatch-book"/></svg>
+          <span data-i18n="nav.create">Creador de paletas</span>
+        </a>
+      </li>
+      <li>
+        <a href="/values/" aria-current="page">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg>
+          <span data-i18n="nav.values">Chequeo de values</span>
+        </a>
+      </li>
+      <li>
+        <a href="/rampas/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#blend"/></svg>
+          <span data-i18n="nav.ramps">Rampas de color</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <div class="sidebar-foot">
+    <p class="tagline" data-i18n="site.tagline">Herramientas para armar tus propias paletas.</p>
+    <div class="settings">
+      <div class="settings-panel" id="settingsPanel" role="group" aria-label="Configuración" data-i18n-attr="aria-label:settings.title" hidden>
+        <fieldset class="lang-field">
+          <legend><svg class="icon" aria-hidden="true"><use href="/icons.svg#languages"/></svg><span data-i18n="settings.language">Idioma</span></legend>
+          <div class="lang-options" id="langOptions"></div>
+        </fieldset>
+        <button class="install-btn" id="installBtn" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="settings.install">Instalar Palettekit</span></button>
+      </div>
+      <button class="settings-btn" id="settingsBtn" type="button" aria-expanded="false" aria-controls="settingsPanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#settings"/></svg><span data-i18n="settings.title">Configuración</span></button>
+    </div>
+  </div>
+</aside>
+<div class="scrim" id="scrim" hidden></div>
+<!-- /shared:sidebar -->
+
+<div class="content">
+<!-- shared:topbar -->
+<div class="topbar">
+  <button id="menuBtn" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú" data-i18n-attr="aria-label:nav.openMenu">
+    <svg class="icon" aria-hidden="true"><use href="/icons.svg#menu"/></svg>
+  </button>
+  <a class="brand" href="/">
+    <img src="/logo.svg" alt="" width="26" height="27">
+    <span>Palettekit</span>
+  </a>
+</div>
+<!-- /shared:topbar -->
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-i18n="values.h1">Chequeo de values</h1>
+      <p class="lede" data-i18n="values.lede">Reducí una referencia o tu dibujo a pocos values para ver si el claroscuro se lee: las masas de luz y de sombra, sin el detalle ni el color.</p>
+    </div>
+    <div class="actions">
+      <button id="downloadImg" class="primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="common.downloadImg">Descargar imagen</span></button>
+    </div>
+  </header>
+
+  <div class="foto-main">
+    <div class="foto-top">
+      <div class="card" id="imageCard">
+        <div class="row">
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg><span data-i18n="image.title">Imagen</span></span>
+          <div class="row-start">
+            <label class="check" id="origGreyToggle" hidden><input id="origGrey" type="checkbox"> <span data-i18n="common.showGrey">Ver en grises</span></label>
+            <button id="changeImg" class="small" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#upload"/></svg><span data-i18n="image.change">Cambiar</span></button>
+          </div>
+        </div>
+        <label class="dropzone" id="dropzone">
+          <input id="file" type="file" accept="image/*" class="sr-only">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#upload"/></svg>
+          <strong data-i18n="image.choose">Elegí una imagen</strong>
+          <span data-i18n="image.dropHint">o arrastrala acá, o pegala con Ctrl+V</span>
+        </label>
+        <img id="preview" class="foto-img" alt="Imagen de referencia" data-i18n-attr="alt:image.previewAlt" hidden>
+        <canvas id="greyView" class="foto-img" role="img" aria-label="La imagen en grises" data-i18n-attr="aria-label:values.greyLabel" hidden></canvas>
+      </div>
+      <div class="card">
+        <div class="row">
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg><span data-i18n="values.result">En values</span></span>
+        </div>
+        <canvas id="notan" class="foto-img" role="img" aria-label="La imagen reducida a pocos values" data-i18n-attr="aria-label:values.resultLabel" hidden></canvas>
+        <p class="empty-note" id="notanEmpty" data-i18n="values.resultEmpty">Cargá una imagen para verla reducida a pocos values.</p>
+      </div>
+    </div>
+
+    <div class="card values-controls">
+      <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="common.controls">Ajustes</span></span>
+      <div class="values-grid">
+        <div class="values-settings">
+          <fieldset class="field segmented-field">
+            <legend data-i18n="values.levels">Cantidad de values</legend>
+            <div class="segmented" id="levels"></div>
+          </fieldset>
+          <div class="field">
+            <label for="squint"><span data-i18n="values.squint">Entrecerrar los ojos</span> <output id="squintOut">0</output></label>
+            <input id="squint" type="range" min="0" max="10" step="1" value="0">
+            <span class="hint" data-i18n="values.squintHint">Desenfoca antes de separar los values, como cuando mirás con los ojos entrecerrados: el detalle se funde y quedan las masas.</span>
+          </div>
+          <div class="field">
+            <span class="field-label" data-i18n="values.thresholds">Límites entre values</span>
+            <div class="thresholds" id="thresholds"></div>
+            <div class="row-start">
+              <button id="evenBtn" class="small" type="button" data-i18n="values.even">Parejos</button>
+              <button id="balanceBtn" class="small" type="button" disabled title="Pone cada límite donde reparte la imagen en partes iguales" data-i18n-attr="title:values.balanceTitle"><span data-i18n="values.balance">Ajustar a la imagen</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="values-hist">
+          <span class="field-label" data-i18n="values.histogram">Values de la imagen</span>
+          <canvas id="hist" width="640" height="160" role="img" aria-label="Cuánto de la imagen hay en cada value, de oscuro a claro, con los límites marcados" data-i18n-attr="aria-label:values.histLabel"></canvas>
+          <div class="hist-axis" aria-hidden="true"><span>0</span><span>5</span><span>10</span></div>
+          <ul class="bands" id="bands"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<div id="announce" class="sr-only" aria-live="polite"></div>
+</body>
+</html>

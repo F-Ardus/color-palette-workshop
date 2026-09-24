@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROLES } from '../public/js/palette.js';
+import { pages } from '../scripts/partials.mjs';
 
 const PUBLIC = new URL('../public/', import.meta.url);
 const read = rel => fs.readFileSync(new URL(rel, PUBLIC), 'utf8');
 const LANG_FILES = fs.readdirSync(new URL('i18n/', PUBLIC)).filter(f => f.endsWith('.json'));
 const dicts = Object.fromEntries(LANG_FILES.map(f => [path.basename(f, '.json'), JSON.parse(read('i18n/' + f))]));
-const PAGES = ['index.html', 'foto/index.html', 'crear/index.html'];
+const PAGES = pages();
 const SCRIPTS = fs.readdirSync(new URL('js/', PUBLIC)).filter(f => f.endsWith('.js'));
 
 const placeholders = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
@@ -16,8 +17,8 @@ const placeholders = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
 // Every key the pages and scripts use. Dynamic ones are listed by hand.
 function usedKeys() {
   const keys = new Set();
-  for (const page of PAGES) {
-    const html = read(page);
+  const sources = [...PAGES.map(read), ...fs.readdirSync(new URL('../partials/', import.meta.url)).map(f => fs.readFileSync(new URL('../partials/' + f, import.meta.url), 'utf8'))];
+  for (const html of sources) {
     for (const m of html.matchAll(/data-i18n="([^"]+)"/g)) keys.add(m[1]);
     for (const m of html.matchAll(/data-i18n-attr="([^"]+)"/g))
       for (const pair of m[1].split(',')) keys.add(pair.split(':')[1].trim());

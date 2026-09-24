@@ -1,0 +1,55 @@
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/">
+    <img src="/logo.svg" alt="" width="32" height="33">
+    <span>Palettekit</span>
+  </a>
+  <nav aria-label="Herramientas" data-i18n-attr="aria-label:nav.tools">
+    <p class="nav-h" data-i18n="nav.tools">Herramientas</p>
+    <ul>
+      <li>
+        <a href="/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>
+          <span data-i18n="nav.generator">Generador de paletas</span>
+        </a>
+      </li>
+      <li>
+        <a href="/foto/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg>
+          <span data-i18n="nav.photo">Paleta desde una foto</span>
+        </a>
+      </li>
+      <li>
+        <a href="/crear/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#swatch-book"/></svg>
+          <span data-i18n="nav.create">Creador de paletas</span>
+        </a>
+      </li>
+      <li>
+        <a href="/values/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg>
+          <span data-i18n="nav.values">Chequeo de values</span>
+        </a>
+      </li>
+      <li>
+        <a href="/rampas/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#blend"/></svg>
+          <span data-i18n="nav.ramps">Rampas de color</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <div class="sidebar-foot">
+    <p class="tagline" data-i18n="site.tagline">Herramientas para armar tus propias paletas.</p>
+    <div class="settings">
+      <div class="settings-panel" id="settingsPanel" role="group" aria-label="Configuración" data-i18n-attr="aria-label:settings.title" hidden>
+        <fieldset class="lang-field">
+          <legend><svg class="icon" aria-hidden="true"><use href="/icons.svg#languages"/></svg><span data-i18n="settings.language">Idioma</span></legend>
+          <div class="lang-options" id="langOptions"></div>
+        </fieldset>
+        <button class="install-btn" id="installBtn" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="settings.install">Instalar Palettekit</span></button>
+      </div>
+      <button class="settings-btn" id="settingsBtn" type="button" aria-expanded="false" aria-controls="settingsPanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#settings"/></svg><span data-i18n="settings.title">Configuración</span></button>
+    </div>
+  </div>
+</aside>
+<div class="scrim" id="scrim" hidden></div>

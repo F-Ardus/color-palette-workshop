@@ -7,6 +7,7 @@ import { addToHistory, load, paletteFromParam, removeFromHistory, saveHistory, s
 import { drawSphere } from './sphere.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { setIcon } from './icons.js';
+import { hexListParam } from './hexlist.js';
 import { announce as say, button, copy, el, iconButton, showGap, toast } from './ui.js';
 
 const $ = id => document.getElementById(id);
@@ -234,13 +235,8 @@ function renderHistory() {
 const announce = () => say(t('gen.announce', { values: palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', ') }));
 
 /* ---------- events ---------- */
-// Narrow layouts: settings collapse into a toggle above the palette (the
-// toggle is only displayed there, see styles.css).
-$('controlsToggle').addEventListener('click', () => {
-  const open = $('controls').classList.toggle('open');
-  $('controlsToggle').setAttribute('aria-expanded', String(open));
-});
 $('gen').addEventListener('click', generate);
+$('toCreator').addEventListener('click', () => { location.href = '/crear/?' + hexListParam(palette.colors); });
 $('copyAll').addEventListener('click', () => copy(palette.colors.join('\n'), t('common.hexCopied')));
 
 $('exportCsp').addEventListener('click', async () => {

@@ -1,0 +1,17 @@
+<script>
+/* Hides the page until js/i18n.js has translated it, when the language isn't
+   the markup's (Spanish). Mirrors detect() in js/i18n.js; the timeout keeps
+   the page from staying hidden if scripts fail. */
+(function(){try{var l=localStorage.getItem('pk-lang');if(l!=='es'&&l!=='en'){l='en';var ls=navigator.languages||[navigator.language];for(var i=0;i<ls.length;i++){var c=(ls[i]||'').slice(0,2).toLowerCase();if(c==='es'||c==='en'){l=c;break}}}if(l!=='es'){var d=document.documentElement;d.classList.add('i18n-loading');setTimeout(function(){d.classList.remove('i18n-loading')},2500)}}catch(e){}})();
+</script>
+<meta name="theme-color" content="#ECEDEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171B" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/js/nav.js"></script>

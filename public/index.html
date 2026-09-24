@@ -3,23 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- shared:head -->
 <script>
 /* Hides the page until js/i18n.js has translated it, when the language isn't
    the markup's (Spanish). Mirrors detect() in js/i18n.js; the timeout keeps
    the page from staying hidden if scripts fail. */
 (function(){try{var l=localStorage.getItem('pk-lang');if(l!=='es'&&l!=='en'){l='en';var ls=navigator.languages||[navigator.language];for(var i=0;i<ls.length;i++){var c=(ls[i]||'').slice(0,2).toLowerCase();if(c==='es'||c==='en'){l=c;break}}}if(l!=='es'){var d=document.documentElement;d.classList.add('i18n-loading');setTimeout(function(){d.classList.remove('i18n-loading')},2500)}}catch(e){}})();
 </script>
-<title data-i18n="gen.pageTitle">Generador de paletas · Palettekit</title>
-<meta name="description" data-i18n-attr="content:gen.description" content="Generador de paletas por armonía de tonos, con la opción de que cada color ocupe un escalón de value distinto para dibujar en claroscuro. Parte de Palettekit.">
 <meta name="theme-color" content="#ECEDEF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15171B" media="(prefers-color-scheme: dark)">
-<link rel="canonical" href="https://palettekit.fardus.dev/">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Palettekit">
-<meta property="og:title" content="Generador de paletas · Palettekit">
-<meta property="og:description" content="Paletas por armonía de tonos, con la opción de escalonar los values para dibujar en claroscuro.">
-<meta property="og:url" content="https://palettekit.fardus.dev/">
-<meta property="og:image" content="https://palettekit.fardus.dev/icon-512.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/logo.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -28,10 +21,21 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/styles.css">
 <script type="module" src="/js/nav.js"></script>
+<!-- /shared:head -->
+<title data-i18n="gen.pageTitle">Generador de paletas · Palettekit</title>
+<meta name="description" data-i18n-attr="content:gen.description" content="Generador de paletas por armonía de tonos, con la opción de que cada color ocupe un escalón de value distinto para dibujar en claroscuro. Parte de Palettekit.">
+<link rel="canonical" href="https://palettekit.fardus.dev/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Palettekit">
+<meta property="og:title" content="Generador de paletas · Palettekit">
+<meta property="og:description" content="Paletas por armonía de tonos, con la opción de escalonar los values para dibujar en claroscuro.">
+<meta property="og:url" content="https://palettekit.fardus.dev/">
+<meta property="og:image" content="https://palettekit.fardus.dev/icon-512.png">
 <script type="module" src="/js/app.js"></script>
 </head>
 <body>
 <div class="app">
+<!-- shared:sidebar -->
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="/">
     <img src="/logo.svg" alt="" width="32" height="33">
@@ -58,6 +62,18 @@
           <span data-i18n="nav.create">Creador de paletas</span>
         </a>
       </li>
+      <li>
+        <a href="/values/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg>
+          <span data-i18n="nav.values">Chequeo de values</span>
+        </a>
+      </li>
+      <li>
+        <a href="/rampas/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#blend"/></svg>
+          <span data-i18n="nav.ramps">Rampas de color</span>
+        </a>
+      </li>
     </ul>
   </nav>
   <div class="sidebar-foot">
@@ -68,14 +84,17 @@
           <legend><svg class="icon" aria-hidden="true"><use href="/icons.svg#languages"/></svg><span data-i18n="settings.language">Idioma</span></legend>
           <div class="lang-options" id="langOptions"></div>
         </fieldset>
+        <button class="install-btn" id="installBtn" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="settings.install">Instalar Palettekit</span></button>
       </div>
       <button class="settings-btn" id="settingsBtn" type="button" aria-expanded="false" aria-controls="settingsPanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#settings"/></svg><span data-i18n="settings.title">Configuración</span></button>
     </div>
   </div>
 </aside>
 <div class="scrim" id="scrim" hidden></div>
+<!-- /shared:sidebar -->
 
 <div class="content">
+<!-- shared:topbar -->
 <div class="topbar">
   <button id="menuBtn" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú" data-i18n-attr="aria-label:nav.openMenu">
     <svg class="icon" aria-hidden="true"><use href="/icons.svg#menu"/></svg>
@@ -85,6 +104,7 @@
     <span>Palettekit</span>
   </a>
 </div>
+<!-- /shared:topbar -->
 <div class="wrap">
   <header>
     <div>
@@ -94,16 +114,17 @@
     <div class="actions">
       <button id="copyAll" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#copy"/></svg><span data-i18n="common.copyHex">Copiar hex</span></button>
       <button id="exportCsp" type="button" title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta" data-i18n-attr="title:common.exportCspTitle"><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="common.exportCsp">Exportar a Clip Studio</span></button>
+      <button id="toCreator" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#swatch-book"/></svg><span data-i18n="common.toCreator">Abrir en el creador</span></button>
       <button id="gen" class="primary" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#dices"/></svg><span data-i18n="gen.generate">Generar</span> <kbd data-i18n="gen.spaceKey">espacio</kbd></button>
     </div>
   </header>
 
   <div class="layout">
-    <aside class="controls" id="controls" aria-label="Ajustes" data-i18n-attr="aria-label:gen.controls">
-      <h2 class="controls-title"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="gen.controls">Ajustes</span></h2>
+    <aside class="controls" id="controls" aria-label="Ajustes" data-i18n-attr="aria-label:common.controls">
+      <h2 class="controls-title"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="common.controls">Ajustes</span></h2>
       <!-- Narrow screens: the settings collapse into this toggle, above the palette -->
       <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="controlsBody">
-        <span><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="gen.controls">Ajustes</span></span>
+        <span><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="common.controls">Ajustes</span></span>
         <svg class="icon chevron" aria-hidden="true"><use href="/icons.svg#chevron-down"/></svg>
       </button>
       <div class="controls-body" id="controlsBody">

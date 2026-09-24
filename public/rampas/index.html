@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- shared:head -->
+<script>
+/* Hides the page until js/i18n.js has translated it, when the language isn't
+   the markup's (Spanish). Mirrors detect() in js/i18n.js; the timeout keeps
+   the page from staying hidden if scripts fail. */
+(function(){try{var l=localStorage.getItem('pk-lang');if(l!=='es'&&l!=='en'){l='en';var ls=navigator.languages||[navigator.language];for(var i=0;i<ls.length;i++){var c=(ls[i]||'').slice(0,2).toLowerCase();if(c==='es'||c==='en'){l=c;break}}}if(l!=='es'){var d=document.documentElement;d.classList.add('i18n-loading');setTimeout(function(){d.classList.remove('i18n-loading')},2500)}}catch(e){}})();
+</script>
+<meta name="theme-color" content="#ECEDEF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171B" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/js/nav.js"></script>
+<!-- /shared:head -->
+<title data-i18n="ramp.pageTitle">Rampas de color · Palettekit</title>
+<meta name="description" data-i18n-attr="content:ramp.description" content="Pasos entre un color de luz y uno de sombra, mezclados sin grises sucios, con escalones de value parejos y desplazamiento de tono. Parte de Palettekit.">
+<link rel="canonical" href="https://palettekit.fardus.dev/rampas/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Palettekit">
+<meta property="og:title" content="Rampas de color · Palettekit">
+<meta property="og:description" content="Pasos entre una luz y una sombra, sin grises sucios en el medio.">
+<meta property="og:url" content="https://palettekit.fardus.dev/rampas/">
+<meta property="og:image" content="https://palettekit.fardus.dev/icon-512.png">
+<script type="module" src="/js/rampas-app.js"></script>
+</head>
+<body>
+<div class="app">
+<!-- shared:sidebar -->
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/">
+    <img src="/logo.svg" alt="" width="32" height="33">
+    <span>Palettekit</span>
+  </a>
+  <nav aria-label="Herramientas" data-i18n-attr="aria-label:nav.tools">
+    <p class="nav-h" data-i18n="nav.tools">Herramientas</p>
+    <ul>
+      <li>
+        <a href="/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>
+          <span data-i18n="nav.generator">Generador de paletas</span>
+        </a>
+      </li>
+      <li>
+        <a href="/foto/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg>
+          <span data-i18n="nav.photo">Paleta desde una foto</span>
+        </a>
+      </li>
+      <li>
+        <a href="/crear/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#swatch-book"/></svg>
+          <span data-i18n="nav.create">Creador de paletas</span>
+        </a>
+      </li>
+      <li>
+        <a href="/values/">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg>
+          <span data-i18n="nav.values">Chequeo de values</span>
+        </a>
+      </li>
+      <li>
+        <a href="/rampas/" aria-current="page">
+          <svg class="icon" aria-hidden="true"><use href="/icons.svg#blend"/></svg>
+          <span data-i18n="nav.ramps">Rampas de color</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <div class="sidebar-foot">
+    <p class="tagline" data-i18n="site.tagline">Herramientas para armar tus propias paletas.</p>
+    <div class="settings">
+      <div class="settings-panel" id="settingsPanel" role="group" aria-label="Configuración" data-i18n-attr="aria-label:settings.title" hidden>
+        <fieldset class="lang-field">
+          <legend><svg class="icon" aria-hidden="true"><use href="/icons.svg#languages"/></svg><span data-i18n="settings.language">Idioma</span></legend>
+          <div class="lang-options" id="langOptions"></div>
+        </fieldset>
+        <button class="install-btn" id="installBtn" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="settings.install">Instalar Palettekit</span></button>
+      </div>
+      <button class="settings-btn" id="settingsBtn" type="button" aria-expanded="false" aria-controls="settingsPanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#settings"/></svg><span data-i18n="settings.title">Configuración</span></button>
+    </div>
+  </div>
+</aside>
+<div class="scrim" id="scrim" hidden></div>
+<!-- /shared:sidebar -->
+
+<div class="content">
+<!-- shared:topbar -->
+<div class="topbar">
+  <button id="menuBtn" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú" data-i18n-attr="aria-label:nav.openMenu">
+    <svg class="icon" aria-hidden="true"><use href="/icons.svg#menu"/></svg>
+  </button>
+  <a class="brand" href="/">
+    <img src="/logo.svg" alt="" width="26" height="27">
+    <span>Palettekit</span>
+  </a>
+</div>
+<!-- /shared:topbar -->
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-i18n="ramp.h1">Rampas de color</h1>
+      <p class="lede" data-i18n="ramp.lede">Los pasos entre un color de luz y uno de sombra, mezclados como los ve el ojo: sin el gris sucio que aparece al mezclar en RGB. Útil para las transiciones de la piel.</p>
+    </div>
+    <div class="actions">
+      <button id="copyAll" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#copy"/></svg><span data-i18n="common.copyHex">Copiar hex</span></button>
+      <button id="exportCsp" type="button" title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta" data-i18n-attr="title:common.exportCspTitle"><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="common.exportCsp">Exportar a Clip Studio</span></button>
+      <button id="toGenerator" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg><span data-i18n="common.toGenerator">Abrir en el generador</span></button>
+      <button id="toCreator" class="primary" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#swatch-book"/></svg><span data-i18n="common.toCreator">Abrir en el creador</span></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="controls" id="controls" aria-label="Ajustes" data-i18n-attr="aria-label:common.controls">
+      <h2 class="controls-title"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="common.controls">Ajustes</span></h2>
+      <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="controlsBody">
+        <span><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg><span data-i18n="common.controls">Ajustes</span></span>
+        <svg class="icon chevron" aria-hidden="true"><use href="/icons.svg#chevron-down"/></svg>
+      </button>
+      <div class="controls-body" id="controlsBody">
+        <div class="field">
+          <label for="fromHex" data-i18n="ramp.from">Color de luz</label>
+          <div class="color-input">
+            <span class="color-well" title="Elegir color" data-i18n-attr="title:create.pick"><input id="fromPick" type="color" aria-label="Elegir el color de luz" data-i18n-attr="aria-label:ramp.pickFrom"></span>
+            <input id="fromHex" class="hex-field" type="text" maxlength="9" spellcheck="false" autocomplete="off">
+          </div>
+        </div>
+        <button id="swapBtn" class="small swap-btn" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#arrow-up-down"/></svg><span data-i18n="ramp.swap">Intercambiar</span></button>
+        <div class="field">
+          <label for="toHex" data-i18n="ramp.to">Color de sombra</label>
+          <div class="color-input">
+            <span class="color-well" title="Elegir color" data-i18n-attr="title:create.pick"><input id="toPick" type="color" aria-label="Elegir el color de sombra" data-i18n-attr="aria-label:ramp.pickTo"></span>
+            <input id="toHex" class="hex-field" type="text" maxlength="9" spellcheck="false" autocomplete="off">
+          </div>
+        </div>
+        <hr>
+        <div class="field">
+          <label for="steps"><span data-i18n="ramp.steps">Pasos</span> <output id="stepsOut">7</output></label>
+          <input id="steps" type="range" min="3" max="15" step="1" value="7">
+        </div>
+        <div class="field">
+          <label for="space" data-i18n="ramp.space">Mezcla</label>
+          <select id="space">
+            <option value="oklab" data-i18n="ramp.spaceOklab">Perceptual (OKLab)</option>
+            <option value="oklch" data-i18n="ramp.spaceOklch">Por el círculo de tonos (OKLCH)</option>
+            <option value="rgb" data-i18n="ramp.spaceRgb">RGB común</option>
+          </select>
+          <span class="hint" data-i18n="ramp.spaceHint">OKLCH mantiene el medio más vivo; RGB es la mezcla de la mayoría de los programas, con su gris sucio.</span>
+        </div>
+        <label class="check"><input id="even" type="checkbox"> <span data-i18n="ramp.even">Escalones de value parejos</span></label>
+        <span class="hint" data-i18n="ramp.evenHint">Cada paso baja lo mismo en value, aunque los colores no queden a la misma distancia.</span>
+        <hr>
+        <div class="field">
+          <label for="shift"><span data-i18n="ramp.shift">Desplazar el tono del medio</span> <output id="shiftOut">0°</output></label>
+          <input id="shift" type="range" min="-90" max="90" step="5" value="0">
+        </div>
+        <div class="field">
+          <label for="mid"><span data-i18n="ramp.mid">Saturación del medio</span> <output id="midOut">0%</output></label>
+          <input id="mid" type="range" min="-100" max="100" step="5" value="0">
+          <span class="hint" data-i18n="ramp.bendHint">Como en las rampas de pixel art: los pasos del medio giran de tono o ganan color, y los extremos quedan como los elegiste.</span>
+        </div>
+        <label class="check"><input id="compare" type="checkbox" checked> <span data-i18n="ramp.compare">Comparar con la mezcla RGB</span></label>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div id="swatches" class="swatches ramp-swatches"></div>
+      <div class="compare-row" id="compareRow">
+        <span class="section-h" data-i18n="ramp.compareTitle">Mezcla RGB común, para comparar</span>
+        <div id="rgbStrip" class="ramp-strip" aria-hidden="true"></div>
+      </div>
+      <div class="gray-wrap">
+        <div class="row">
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg><span data-i18n="common.greyTest">Prueba en blanco y negro</span></span>
+          <span class="warn" id="gapInfo"></span>
+        </div>
+        <div id="grey" class="grey" aria-hidden="true"></div>
+      </div>
+    </section>
+  </div>
+</div>
+</div>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<div id="announce" class="sr-only" aria-live="polite"></div>
+</body>
+</html>

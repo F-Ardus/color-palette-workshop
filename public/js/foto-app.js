@@ -10,6 +10,8 @@ import { recolor, rerollOne } from './recolor.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { MAX_COLORS, MIN_COLORS, paletteParam } from './storage.js';
 import { setIcon } from './icons.js';
+import { pixels, setupImageInput } from './image-input.js';
+import { hexListParam } from './hexlist.js';
 import { announce, button, copy, el, iconButton, showGap, toast } from './ui.js';
 
 const $ = id => document.getElementById(id);
@@ -27,7 +29,6 @@ let extracted = []; // [{hex, share, lab}], light to dark, as found in the image
 let colors = [];    // what's shown: `extracted` or a recolored version of it
 let locked = [];    // per color: kept by "Randomizar colores" and not rerollable
 let focused = -1;   // color shown alone on the repainted image, -1 for none
-let previewUrl = null;
 
 const isRecolored = () => colors.some((c, i) => c.hex !== extracted[i]?.hex);
 const pct = share => (share < 0.005 ? '<1%' : `${Math.round(share * 100)}%`);
@@ -61,37 +62,10 @@ function updateCountFields() {
 }
 
 /* ---------- image ---------- */
-function pixels(img, maxSide) {
-  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-  const w = Math.max(1, Math.round(img.naturalWidth * scale));
-  const h = Math.max(1, Math.round(img.naturalHeight * scale));
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const ctx = c.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0, w, h);
-  return ctx.getImageData(0, 0, w, h);
-}
-
-async function loadFile(file) {
-  if (!file || !file.type.startsWith('image/')) { toast(t('photo.notImage')); return; }
-  const url = URL.createObjectURL(file);
-  const probe = new Image();
-  probe.src = url;
-  try { await probe.decode(); } catch {
-    URL.revokeObjectURL(url);
-    toast(t('photo.openFailed'));
-    return;
-  }
-  if (previewUrl) URL.revokeObjectURL(previewUrl);
-  previewUrl = url;
-  const img = $('preview');
-  img.src = url;
-  img.hidden = false;
-  $('dropzone').hidden = true;
-  $('changeImg').hidden = false;
-  source = { analysis: pixels(probe, ANALYSIS_MAX), poster: pixels(probe, POSTER_MAX) };
+setupImageInput(img => {
+  source = { analysis: pixels(img, ANALYSIS_MAX), poster: pixels(img, POSTER_MAX) };
   extract();
-}
+});
 
 // A new extraction drops any recoloring: it would belong to other colors.
 function extract() {
@@ -181,7 +155,7 @@ function render() {
 
     const bottom = el('div', 'bottom');
     // Already light to dark, so the position is the rank.
-    bottom.append(el('span', 'role', t('role.' + roleFor(i, n, v))), el('span', 'share-pct', t('photo.shareOf', { pct: pct(c.share) })), hexBtn, tools);
+    bottom.append(el('span', 'role', t('role.' + roleFor(i, n, v))), el('span', 'share-pct', t('common.shareOf', { pct: pct(c.share) })), hexBtn, tools);
     card.append(top, bottom);
     card.classList.toggle('focused', i === focused);
     // Clicking the card itself (not one of its buttons) does the same as the eye.
@@ -207,6 +181,7 @@ function render() {
 
   $('copyAll').disabled = !n;
   $('exportCsp').disabled = !n;
+  $('toCreator').disabled = !n;
   const tg = $('toGenerator');
   tg.disabled = n < MIN_COLORS;
   tg.title = n && n < MIN_COLORS ? t('common.genMin', { min: MIN_COLORS }) : t('common.genContinue');
@@ -232,27 +207,6 @@ function drawPoster() {
 }
 
 /* ---------- events ---------- */
-$('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
-$('changeImg').addEventListener('click', () => $('file').click());
-
-// Dropping anywhere on the page loads the image (and keeps the browser from
-// navigating away to the file).
-let dragDepth = 0;
-const setOver = on => $('imageCard').classList.toggle('over', on);
-document.addEventListener('dragenter', e => { if (e.dataTransfer?.types.includes('Files')) { dragDepth++; setOver(true); } });
-document.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) setOver(false); });
-document.addEventListener('dragover', e => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
-document.addEventListener('drop', e => {
-  if (!e.dataTransfer?.files.length) return;
-  e.preventDefault();
-  dragDepth = 0; setOver(false);
-  loadFile(e.dataTransfer.files[0]);
-});
-document.addEventListener('paste', e => {
-  const item = [...(e.clipboardData?.items ?? [])].find(i => i.type.startsWith('image/'));
-  if (item) { e.preventDefault(); loadFile(item.getAsFile()); }
-});
-
 ['count', 'detail'].forEach(id => {
   $(id).addEventListener('input', updateCountFields);
   $(id).addEventListener('change', () => { savePrefs(); extract(); });
@@ -279,6 +233,7 @@ $('exportCsp').addEventListener('click', async () => {
     toast(t('common.exportFailed'));
   }
 });
+$('toCreator').addEventListener('click', () => { location.href = '/crear/?' + hexListParam(colors.map(c => c.hex)); });
 $('toGenerator').addEventListener('click', () => {
   location.href = '/?' + paletteParam(topByShare(colors, MAX_COLORS).map(c => c.hex));
 });

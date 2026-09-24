@@ -22,7 +22,17 @@ Herramientas:
   de "Copiar hex", links, CSS, etc.) o de cero. Editar con selector de color o campo hex, mover, borrar,
   agregar, ordenar por value; todo con Deshacer / Ctrl+Z. La dirección de la página siempre es el link a la
   paleta actual (`/crear/?colors=...`, se actualiza con `replaceState`). Exporta imagen PNG 1200×630
-  (`palette-image.js`), link (compartir en pantallas táctiles), hex, .aco y al generador (primeros 9). "Abrir en el generador" pasa la paleta
+  (`palette-image.js`), link (compartir en pantallas táctiles), hex, .aco y al generador (primeros 9).
+  Las tarjetas se reordenan arrastrando la manija (pointer events: mouse y touch; con teclado, flechas
+  sobre la manija). Si se abre con una paleta en la URL distinta de la guardada, la guardada queda en
+  Deshacer.
+- **Chequeo de values** (`/values/`): una imagen reducida a 2–5 values (`notan.js`), con "entrecerrar los
+  ojos" (desenfoque de caja en 3 pasadas antes de separar), límites ajustables (parejos o "ajustar a la
+  imagen" por cuantiles), histograma de values (escala raíz cuadrada) y % de cada franja.
+- **Rampas de color** (`/rampas/`): pasos entre un color de luz y uno de sombra (`ramp.js`) en OKLab, OKLCH o
+  RGB común (para comparar), con escalones de value parejos, desplazamiento de tono y saturación del medio
+  (curva sin(πt): los extremos quedan exactos).
+- Generador, foto y rampas tienen "Abrir en el creador" (`/crear/?colors=…`). "Abrir en el generador" pasa la paleta
   por URL; si hay más de 9 colores, los 9 que más ocupan (`topByShare`).
 
 ## Stack y deploy
@@ -36,10 +46,11 @@ Herramientas:
 - CI (`.github/workflows/deploy.yml`): corre `npm test` en cada push y PR; si pasa y es
   `main`, deploya con wrangler-action (versión fijada, secrets `CLOUDFLARE_API_TOKEN` y
   `CLOUDFLARE_ACCOUNT_ID`). Pushear a main = publicar.
-- Entorno: Windows + Git Bash. Node ≥ 22.
+- Entorno: Windows + Git Bash. Node ≥ 22. `.gitattributes` fuerza LF.
 
 ## Comandos
 - `npm test` — tests con `node --test` (`test/*.test.js`), sin dependencias.
+- `npm run sync` — copia los bloques compartidos de `partials/` en cada página (ver "Sumar una herramienta").
 - `npm run dev` — `wrangler dev` en http://localhost:8787. Los módulos no cargan desde `file://`.
   La redirección de subdominio no se puede probar local (dev reescribe el host); la cubre `test/worker.test.js`.
 
@@ -59,6 +70,9 @@ Herramientas:
 - `public/crear/index.html` + `public/js/crear-app.js`. `public/js/hexlist.js` — puro: `parseHexList`,
   `hexListParam`, `colorsFromParam` (listas de 1 a 24). `public/js/palette-image.js` — `imageLayout` (puro)
   y `drawPaletteImage`. Guarda en localStorage `pk-crear`.
+- `public/values/` + `values-app.js` + `notan.js` (puro). `public/rampas/` + `rampas-app.js` + `ramp.js` (puro).
+  `public/js/image-input.js` — carga de imagen compartida (botón, arrastrar, pegar) y `pixels()`; la usan foto
+  y values. Preferencias en localStorage `pk-values` y `pk-rampas`.
 - Pasar una paleta entre herramientas: `/?colors=RRGGBB,...` (`paletteParam` / `paletteFromParam` en
   `storage.js`). El generador la toma al cargar, manda la paleta anterior al historial, limpia la URL y la ordena por
   value (salvo sin escalar con "Ordenar por value" apagado): las herramientas pueden mandar cualquier orden.
@@ -76,6 +90,16 @@ Herramientas:
   `favicon-32.png`, `apple-touch-icon.png` e `icon-512.png` (og:image) se renderizaron desde el SVG;
   si cambia el logo, regenerarlos.
 
+## Instalable y offline
+- `public/manifest.webmanifest` (íconos 192/512/maskable, atajos a cada herramienta) y `public/sw.js`:
+  red primero y copia en caché como respaldo (nunca mezcla archivos de dos deploys); en la instalación
+  precarga todo el sitio. Las páginas se guardan sin su `?colors=` para que los links de paleta abran offline.
+  Las fuentes de Google se cachean al usarse.
+- `nav.js` registra el service worker y muestra "Instalar Palettekit" en el menú de configuración cuando el
+  navegador lo ofrece (`beforeinstallprompt`).
+- `test/sw.test.js` exige que `PRECACHE` liste exactamente los archivos de `public/` y que cada página esté en
+  los atajos del manifest: al sumar un archivo o una herramienta, actualizar ambos.
+
 ## Idiomas (i18n)
 - Textos en `public/i18n/es.json` y `en.json`: claves planas por sección (`nav.*`, `common.*`, `gen.*`,
   `photo.*`, `create.*`, `role.*`…), `{marcadores}` y plurales como `clave_one` / `clave_other`.
@@ -85,7 +109,7 @@ Herramientas:
 - Markup: `data-i18n="clave"` pone el textContent; `data-i18n-attr="aria-label:clave,title:otra"` atributos.
   El texto va en su propio `<span>` para no pisar íconos ni inputs. El HTML queda escrito en español y
   tiene que coincidir con es.json (lo verifica un test).
-- Cada página tiene en el `<head>` un script inline que oculta la página (`i18n-loading`) hasta que se
+- El head compartido (`partials/head.html`) tiene un script inline que oculta la página (`i18n-loading`) hasta que se
   traduce, si el idioma no es español; replica `detect()` de i18n.js, mantenerlos iguales.
 - Los módulos puros no traducen: devuelven claves (p. ej. `roleFor` → `'midLight'`, la UI usa `t('role.' + …)`).
 - `test/i18n.test.js` exige mismas claves y marcadores en todos los idiomas, que exista toda clave usada en
@@ -93,10 +117,14 @@ Herramientas:
 - El selector está en el menú de configuración al pie de la barra lateral (`nav.js`).
 
 ## Sumar una herramienta
-- Una página HTML por herramienta en `public/` (p. ej. `public/foto/index.html`), con el mismo
-  bloque `.app` / `.sidebar` / `.topbar` y `js/nav.js`. El markup de la barra está copiado en cada
-  página (con su menú de configuración): al sumar una herramienta, agregar su link en la `<nav>` de todas y marcar la actual con
-  `aria-current="page"`. En páginas de subcarpetas, rutas absolutas (`/styles.css`, `/js/...`). Si las páginas pasan de tres o cuatro, conviene generar la barra desde un módulo.
+- Una página HTML por herramienta en `public/<carpeta>/index.html`, con `js/nav.js` y rutas absolutas
+  (`/styles.css`, `/js/...`). Lo común del `<head>` (script de idioma, colores de tema, manifest, íconos,
+  fuentes, estilos, `nav.js`), la barra lateral (con el menú de configuración) y la barra superior viven una
+  sola vez en `partials/`; cada página solo pone su título, descripción, etiquetas og y su script; en cada página van entre
+  `<!-- shared:NOMBRE -->` y `<!-- /shared:NOMBRE -->`. Nunca editarlos en una página: editar el partial y
+  correr `npm run sync`, que también marca `aria-current` en el link de la página. Para una herramienta
+  nueva: copiar una página existente, agregar su link en `partials/sidebar.html` y sincronizar.
+  `test/partials.test.js` falla si alguna página quedó desactualizada o si falta un link. Si las páginas pasan de tres o cuatro, conviene generar la barra desde un módulo.
 - Lógica en módulos puros con test; un módulo `*-app.js` por página que cablea el DOM.
 
 ## Modelo (Generador de paletas)
