@@ -265,6 +265,12 @@ function copy(text, msg) {
 }
 
 /* ---------- events ---------- */
+// Narrow layouts: settings collapse into a toggle above the palette (the
+// toggle is only displayed there, see styles.css).
+$('controlsToggle').addEventListener('click', () => {
+  const open = $('controls').classList.toggle('open');
+  $('controlsToggle').setAttribute('aria-expanded', String(open));
+});
 $('gen').addEventListener('click', generate);
 $('copyAll').addEventListener('click', () => copy(palette.colors.join('\n'), 'Hex de la paleta copiados'));
 

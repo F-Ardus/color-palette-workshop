@@ -30,7 +30,9 @@ Herramientas:
 - `public/index.html` — Generador de paletas. `public/styles.css` — tokens en `:root`, tema oscuro por
   `prefers-color-scheme`, shell (barra lateral + contenido) y estilos de la herramienta.
   Los breakpoints del contenido son container queries sobre `.content` (su ancho real, sin la barra);
-  la barra pasa a menú desplegable por debajo de 1024px de ventana.
+  la barra pasa a menú desplegable por debajo de 1024px de ventana. Con el contenido por debajo de 860px,
+  los ajustes quedan arriba de la paleta como panel plegable (`#controlsToggle`, cerrado al cargar,
+  alto máximo 50vh con scroll interno); en escritorio siempre están abiertos a la izquierda.
 - `public/js/nav.js` — menú desplegable de la barra lateral; lo carga cada página.
 - `public/icons.svg` — sprite con los íconos de Lucide que se usan (ISC, crédito en el archivo). En HTML:
   `<svg class="icon" aria-hidden="true"><use href="/icons.svg#nombre"/></svg>`; desde JS, `icon(nombre)` de

@@ -70,8 +70,14 @@
   </header>
 
   <div class="layout">
-    <aside class="controls" aria-label="Ajustes">
-      <h2><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg>Ajustes</h2>
+    <aside class="controls" id="controls" aria-label="Ajustes">
+      <h2 class="controls-title"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg>Ajustes</h2>
+      <!-- Narrow screens: the settings collapse into this toggle, above the palette -->
+      <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="controlsBody">
+        <span><svg class="icon" aria-hidden="true"><use href="/icons.svg#sliders-horizontal"/></svg>Ajustes</span>
+        <svg class="icon chevron" aria-hidden="true"><use href="/icons.svg#chevron-down"/></svg>
+      </button>
+      <div class="controls-body" id="controlsBody">
       <label class="check"><input id="keep" type="checkbox"> Mantener tonos</label>
       <span class="hint">Los ajustes corrigen la paleta actual sin cambiar sus tonos. Generar, la armonía o la temperatura sortean tonos nuevos.</span>
       <hr>
@@ -128,6 +134,7 @@
       </div>
       <label class="check"><input id="mute" type="checkbox"> Apagar los extremos</label>
       <span class="hint">Baja la saturación del más claro y del más oscuro, como pasa con la luz real.</span>
+      </div>
     </aside>
 
     <section class="main">

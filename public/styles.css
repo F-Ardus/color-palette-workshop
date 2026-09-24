@@ -71,8 +71,15 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid currentColor;border-
 .layout{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
 @container (max-width:860px){
   .layout{grid-template-columns:1fr}
-  /* palette first; the settings follow */
-  .main{order:-1}
+  /* Settings sit above the palette, collapsed into a toggle; open, they scroll
+     inside a capped height so part of the palette stays in view. */
+  .layout .controls{padding:0;gap:0}
+  .controls .controls-title{display:none}
+  .controls .controls-toggle{display:flex}
+  .controls .controls-body{display:none;padding:14px 16px 18px;max-height:50vh;overflow-y:auto;overscroll-behavior:contain}
+  .controls.open .controls-body{display:flex}
+  .controls.open .controls-toggle{border-bottom:1px solid var(--line);border-radius:12px 12px 0 0}
+  .controls.open .chevron{transform:rotate(180deg)}
 }
 @container (max-width:620px){
   .actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
@@ -83,6 +90,10 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid currentColor;border-
 
 .controls{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px}
 .controls h2,.section-h{display:inline-flex;align-items:center;gap:6px;font-family:var(--body);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
+.controls-body{display:flex;flex-direction:column;gap:16px}
+.controls-toggle{display:none;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;border:0;border-radius:12px;background:none;font-weight:600}
+.controls-toggle span{display:inline-flex;align-items:center;gap:8px}
+.controls-toggle .chevron{transition:transform .2s ease}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{display:flex;justify-content:space-between;gap:8px;font-weight:500;font-size:14px}
 .field output{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -142,4 +153,4 @@ canvas{width:100%;height:auto;border-radius:8px;display:block;max-width:100%}
 .tips{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:4px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){.sw,.toast,.sidebar,.sidebar.open{transition:none}}
+@media (prefers-reduced-motion:reduce){.sw,.toast,.sidebar,.sidebar.open,.controls-toggle .chevron{transition:none}}
