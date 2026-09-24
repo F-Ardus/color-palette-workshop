@@ -76,10 +76,26 @@ Herramientas:
   `favicon-32.png`, `apple-touch-icon.png` e `icon-512.png` (og:image) se renderizaron desde el SVG;
   si cambia el logo, regenerarlos.
 
+## Idiomas (i18n)
+- Textos en `public/i18n/es.json` y `en.json`: claves planas por sección (`nav.*`, `common.*`, `gen.*`,
+  `photo.*`, `create.*`, `role.*`…), `{marcadores}` y plurales como `clave_one` / `clave_other`.
+- `public/js/i18n.js` se importa antes que todo (top-level await): detecta idioma (`pk-lang` en localStorage,
+  si no el del navegador, si no inglés), carga el JSON, traduce el markup y expone `t(clave, vars)`,
+  `tn(clave, n)`, `lang`, `LANGS`, `setLang` (guarda y recarga).
+- Markup: `data-i18n="clave"` pone el textContent; `data-i18n-attr="aria-label:clave,title:otra"` atributos.
+  El texto va en su propio `<span>` para no pisar íconos ni inputs. El HTML queda escrito en español y
+  tiene que coincidir con es.json (lo verifica un test).
+- Cada página tiene en el `<head>` un script inline que oculta la página (`i18n-loading`) hasta que se
+  traduce, si el idioma no es español; replica `detect()` de i18n.js, mantenerlos iguales.
+- Los módulos puros no traducen: devuelven claves (p. ej. `roleFor` → `'midLight'`, la UI usa `t('role.' + …)`).
+- `test/i18n.test.js` exige mismas claves y marcadores en todos los idiomas, que exista toda clave usada en
+  HTML y JS, y que no sobren claves. Para sumar un idioma: nuevo JSON + entrada en `LANGS` + el snippet del head.
+- El selector está en el menú de configuración al pie de la barra lateral (`nav.js`).
+
 ## Sumar una herramienta
 - Una página HTML por herramienta en `public/` (p. ej. `public/foto/index.html`), con el mismo
   bloque `.app` / `.sidebar` / `.topbar` y `js/nav.js`. El markup de la barra está copiado en cada
-  página: al sumar una herramienta, agregar su link en la `<nav>` de todas y marcar la actual con
+  página (con su menú de configuración): al sumar una herramienta, agregar su link en la `<nav>` de todas y marcar la actual con
   `aria-current="page"`. En páginas de subcarpetas, rutas absolutas (`/styles.css`, `/js/...`). Si las páginas pasan de tres o cuatro, conviene generar la barra desde un módulo.
 - Lógica en módulos puros con test; un módulo `*-app.js` por página que cablea el DOM.
 
@@ -126,6 +142,7 @@ Herramientas:
 - Ante cualquier cambio en `buildAco`, probar la importación en Clip Studio.
 
 ## Convenciones
-- Textos de UI en español rioplatense (voseo). Comentarios de código en inglés.
+- Textos de UI en español rioplatense (voseo) y en inglés, siempre por i18n (nunca texto fijo en el JS).
+  Comentarios de código en inglés.
 - JS vanilla, sin librerías ni paso de build. Lógica nueva en módulos puros con test;
   `app.js` solo cablea.

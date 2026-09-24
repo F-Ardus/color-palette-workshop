@@ -101,9 +101,9 @@ test('minGap compares every pair, not only neighbours', () => {
 
 test('roles follow the actual value', () => {
   const lin = [9, 7, 5, 3, 1].map((v, i) => roleFor(i, 5, v));
-  assert.deepEqual(lin, ['Luz alta', 'Medio claro', 'Medio', 'Medio oscuro', 'Oscuro profundo']);
+  assert.deepEqual(lin, ['highlight', 'midLight', 'mid', 'midDark', 'deepDark']);
   const low = targetValues(5, 9, 1, 'dark').map((v, i) => roleFor(i, 5, v));
-  assert.deepEqual(low, ['Luz alta', 'Medio', 'Medio oscuro', 'Sombra', 'Oscuro profundo']);
+  assert.deepEqual(low, ['highlight', 'mid', 'midDark', 'shadow', 'deepDark']);
 });
 
 const hueDist = (a, b) => Math.abs(((a - b + 540) % 360) - 180);

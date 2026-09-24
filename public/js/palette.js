@@ -265,13 +265,15 @@ export function minGap(values) {
 
 // rank: the color's place in light-to-dark order (see rankOf). The extremes are
 // always the highlight and the deepest dark; the steps in between are named by
-// their actual value, so low and high key read right.
+// their actual value, so low and high key read right. Returns a key; the UI
+// translates it as "role.<key>".
+export const ROLES = ['highlight', 'light', 'midLight', 'mid', 'midDark', 'shadow', 'deepDark'];
 export function roleFor(rank, n, value) {
-  if (rank === 0) return 'Luz alta';
-  if (rank === n - 1) return 'Oscuro profundo';
-  if (value >= 7.5) return 'Luz';
-  if (value >= 5.75) return 'Medio claro';
-  if (value >= 4.25) return 'Medio';
-  if (value >= 2.5) return 'Medio oscuro';
-  return 'Sombra';
+  if (rank === 0) return 'highlight';
+  if (rank === n - 1) return 'deepDark';
+  if (value >= 7.5) return 'light';
+  if (value >= 5.75) return 'midLight';
+  if (value >= 4.25) return 'mid';
+  if (value >= 2.5) return 'midDark';
+  return 'shadow';
 }

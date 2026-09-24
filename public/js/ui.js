@@ -1,6 +1,8 @@
 // Small DOM helpers shared by every tool page. Pages provide #toast and #announce.
 
 import { icon } from './icons.js';
+import { t } from './i18n.js';
+import { GAP_WARN } from './palette.js';
 
 export function el(tag, className, text) {
   const e = document.createElement(tag);
@@ -26,16 +28,23 @@ export function iconButton(className, name, label) {
 
 let toastTimer;
 export function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  const box = document.getElementById('toast');
+  box.textContent = msg;
+  box.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  toastTimer = setTimeout(() => box.classList.remove('show'), 1800);
 }
 
 // For screen readers: a short summary instead of re-reading a whole grid.
 export function announce(text) {
   document.getElementById('announce').textContent = text;
+}
+
+// The "smallest step between values" line, with a warning when two values
+// are close enough to be mistaken for each other.
+export function showGap(target, gap) {
+  if (gap < GAP_WARN) target.replaceChildren(el('strong', null, t('gap.warnStrong')), ' ' + t('gap.warn', { gap: gap.toFixed(1) }));
+  else target.textContent = t('gap.min', { gap: gap.toFixed(1) });
 }
 
 export function copy(text, msg) {

@@ -3,12 +3,13 @@
 // Clip Studio swatches or into the generator.
 
 import { greyHex, makeColor, textOn, valueOfHex } from './color.js';
-import { GAP_WARN, generatePalette, HARMONIES, minGap } from './palette.js';
+import { t, tn } from './i18n.js';
+import { generatePalette, HARMONIES, minGap } from './palette.js';
 import { colorsFromParam, hexListParam, LIST_MAX, parseHexList } from './hexlist.js';
 import { drawPaletteImage, ensureFonts } from './palette-image.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { MAX_COLORS, MIN_COLORS, paletteParam } from './storage.js';
-import { announce, button, copy, el, iconButton, toast } from './ui.js';
+import { announce, button, copy, el, iconButton, showGap, toast } from './ui.js';
 import { icon } from './icons.js';
 
 const $ = id => document.getElementById(id);
@@ -41,7 +42,7 @@ function undo() {
   colors = undoStack.pop();
   render();
   save();
-  toast('Deshecho');
+  toast(t('create.undone'));
 }
 
 function save() {
@@ -81,12 +82,12 @@ const randomColor = () => makeColor(rand(1.5, 9), rand(0, 360), rand(0.35, 0.8))
 function randomize() {
   const n = colors.length >= MIN_COLORS && colors.length <= 12 ? colors.length : RANDOM_DEFAULT;
   commit(randomPalette(n));
-  announce(`Paleta al azar de ${n} colores`);
+  announce(tn('create.randomAnnounce', n));
 }
 function clearAll() {
   if (!colors.length) return;
   commit([]);
-  toast('Paleta vacía. Ctrl+Z para deshacer');
+  toast(t('create.emptied'));
 }
 function addColor() {
   if (colors.length >= LIST_MAX) return;
@@ -99,7 +100,7 @@ function removeColor(i) {
   commit(colors.filter((_, j) => j !== i));
   const cards = $('swatches').querySelectorAll('.sw:not(.add-card)');
   (cards[Math.min(i, cards.length - 1)]?.querySelector('.remove') ?? $('swatches').querySelector('.add-card'))?.focus();
-  toast(`${hex} borrado. Ctrl+Z para deshacer`);
+  toast(t('create.removed', { hex }));
 }
 function move(i, dir) {
   const j = i + dir;
@@ -111,14 +112,14 @@ function move(i, dir) {
 }
 function sortByValue() {
   commit([...colors].sort((a, b) => valueOfHex(b) - valueOfHex(a)));
-  announce('Ordenada de la más clara a la más oscura');
+  announce(t('create.sortedAnnounce'));
 }
 function importText(text, { append = false } = {}) {
   const found = parseHexList(text);
-  if (!found.length) { toast('No encontré colores hex en ese texto'); return false; }
+  if (!found.length) { toast(t('create.noHex')); return false; }
   const next = append ? [...colors, ...found].slice(0, LIST_MAX) : found;
   commit(next);
-  toast(`${found.length} ${found.length === 1 ? 'color' : 'colores'} ${append ? 'agregados' : 'pegados'}`);
+  toast(tn(append ? 'create.added' : 'create.pasted', found.length));
   return true;
 }
 
@@ -128,12 +129,12 @@ function render() {
   painters = [];
   const cards = colors.map((_, i) => card(i, n));
   const add = button('sw add-card');
-  add.append(icon('plus'), el('span', null, 'Agregar color'));
+  add.append(icon('plus'), el('span', null, t('create.add')));
   add.disabled = n >= LIST_MAX;
-  add.title = n >= LIST_MAX ? `Hasta ${LIST_MAX} colores` : 'Agregar un color al azar';
+  add.title = n >= LIST_MAX ? t('create.maxTitle', { max: LIST_MAX }) : t('create.addTitle');
   add.addEventListener('click', addColor);
   $('swatches').replaceChildren(...cards, add);
-  $('countInfo').textContent = n ? `· ${n} ${n === 1 ? 'color' : 'colores'}` : '· vacía';
+  $('countInfo').textContent = n ? '· ' + tn('create.count', n) : '· ' + t('create.countEmpty');
   $('sortBtn').disabled = n < 2;
   renderShared();
 }
@@ -147,28 +148,27 @@ function renderShared() {
   $('grey').replaceChildren(...vs.map(v => { const s = el('span'); s.style.background = greyHex(v); return s; }));
   const gap = minGap(vs), info = $('gapInfo');
   if (n < 2) info.textContent = '';
-  else if (gap < GAP_WARN) info.replaceChildren(el('strong', null, 'Ojo:'), ` hay values a ${gap.toFixed(1)} de distancia, pueden confundirse.`);
-  else info.textContent = `Salto mínimo entre values: ${gap.toFixed(1)}`;
+  else showGap(info, gap);
   if (n) drawPaletteImage($('imagePreview'), colors, { logo });
   const tg = $('toGenerator');
   tg.disabled = n < MIN_COLORS;
-  tg.title = n < MIN_COLORS ? `El generador necesita al menos ${MIN_COLORS} colores`
-    : n > MAX_COLORS ? `El generador trabaja con hasta ${MAX_COLORS}: se lleva los primeros ${MAX_COLORS}`
-    : 'Seguí trabajando esta paleta en el generador';
+  tg.title = n < MIN_COLORS ? t('common.genMin', { min: MIN_COLORS })
+    : n > MAX_COLORS ? t('create.genFirst', { max: MAX_COLORS })
+    : t('common.genContinue');
 }
 
 function card(i, n) {
   const sw = el('div', 'sw');
   const vText = el('div', 'v');
   const top = el('div', 'top');
-  top.append(el('div', 'vlab', 'Value'), vText);
+  top.append(el('div', 'vlab', t('common.value')), vText);
 
   const picker = el('input', 'picker');
   picker.type = 'color';
-  picker.setAttribute('aria-label', `Elegir el color ${i + 1}`);
+  picker.setAttribute('aria-label', t('create.pickN', { n: i + 1 }));
   const hexIn = el('input', 'hex-input');
   Object.assign(hexIn, { type: 'text', maxLength: 9, spellcheck: false, autocomplete: 'off' });
-  hexIn.setAttribute('aria-label', `Hex del color ${i + 1}`);
+  hexIn.setAttribute('aria-label', t('create.hexN', { n: i + 1 }));
 
   function paint() {
     const hex = colors[i];
@@ -198,7 +198,7 @@ function card(i, n) {
   });
   hexIn.addEventListener('change', () => {
     const [hex] = parseHexList(hexIn.value.includes('#') ? hexIn.value : '#' + hexIn.value.trim());
-    if (!hex) { toast('Ese hex no es válido'); hexIn.value = colors[i]; return; }
+    if (!hex) { toast(t('create.invalidHex')); hexIn.value = colors[i]; return; }
     commit(colors.map((h, j) => (j === i ? hex : h)));
     $('swatches').children[i]?.querySelector('.hex-input')?.focus();
   });
@@ -208,20 +208,20 @@ function card(i, n) {
   // The native picker is invisible on top of a pipette button, so it reads as
   // "pick a color" and still opens the system picker where it's clicked.
   const pickBtn = el('span', 'picker-btn');
-  pickBtn.title = 'Elegir color';
+  pickBtn.title = t('create.pick');
   pickBtn.append(icon('pipette'), picker);
   const edit = el('div', 'edit');
   edit.append(pickBtn, hexIn);
 
-  const beforeBtn = iconButton('before', 'chevron-left', 'Mover antes');
+  const beforeBtn = iconButton('before', 'chevron-left', t('create.before'));
   beforeBtn.disabled = i === 0;
   beforeBtn.addEventListener('click', () => move(i, -1));
-  const afterBtn = iconButton('after', 'chevron-right', 'Mover después');
+  const afterBtn = iconButton('after', 'chevron-right', t('create.after'));
   afterBtn.disabled = i === n - 1;
   afterBtn.addEventListener('click', () => move(i, 1));
-  const copyBtn = iconButton('copy-one', 'copy', 'Copiar hex');
-  copyBtn.addEventListener('click', () => copy(colors[i], `${colors[i]} copiado`));
-  const removeBtn = iconButton('remove', 'trash-2', 'Borrar color');
+  const copyBtn = iconButton('copy-one', 'copy', t('common.copyHex'));
+  copyBtn.addEventListener('click', () => copy(colors[i], t('common.copied', { hex: colors[i] })));
+  const removeBtn = iconButton('remove', 'trash-2', t('create.remove'));
   removeBtn.addEventListener('click', () => removeColor(i));
   const tools = el('div', 'tools');
   tools.append(beforeBtn, afterBtn, copyBtn, removeBtn);
@@ -243,22 +243,22 @@ const imageBlob = () => new Promise((resolve, reject) => {
 $('downloadImg').addEventListener('click', async () => {
   try {
     download(await imageBlob(), 'palettekit-paleta.png', 'image/png');
-    toast('Imagen descargada');
-  } catch { toast('No se pudo generar la imagen'); }
+    toast(t('create.imageDownloaded'));
+  } catch { toast(t('create.imageFailed')); }
 });
 
 // On phones the share sheet is the natural way; elsewhere, copy the link.
 const canShare = () => !!navigator.share && matchMedia('(pointer: coarse)').matches;
-$('shareLabel').textContent = canShare() ? 'Compartir link' : 'Copiar link';
+$('shareLabel').textContent = canShare() ? t('create.shareLink') : t('create.copyLink');
 $('shareLink').addEventListener('click', async () => {
   const url = location.href;
   if (canShare()) {
-    try { await navigator.share({ title: 'Paleta · Palettekit', url }); } catch { /* cancelled */ }
+    try { await navigator.share({ title: t('create.shareTitle'), url }); } catch { /* cancelled */ }
   } else {
-    copy(url, 'Link copiado: abre esta misma paleta');
+    copy(url, t('create.linkCopied'));
   }
 });
-$('copyAll').addEventListener('click', () => copy(colors.join('\n'), 'Hex de la paleta copiados'));
+$('copyAll').addEventListener('click', () => copy(colors.join('\n'), t('common.hexCopied')));
 $('exportCsp').addEventListener('click', async () => {
   try {
     const zip = makeZip([
@@ -266,8 +266,8 @@ $('exportCsp').addEventListener('click', async () => {
       { name: 'palettekit-paleta.png', data: await palettePng(colors) },
     ]);
     download(zip, 'palettekit-paleta.zip', 'application/zip');
-    toast('Descargado. Arrastrá el .aco al panel Set de colores');
-  } catch { toast('No se pudo armar el archivo'); }
+    toast(t('common.acoDownloaded'));
+  } catch { toast(t('common.exportFailed')); }
 });
 $('toGenerator').addEventListener('click', () => {
   location.href = '/?' + paletteParam(colors.slice(0, MAX_COLORS));

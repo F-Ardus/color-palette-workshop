@@ -3,8 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Paleta desde una foto · Palettekit</title>
-<meta name="description" content="Sacá los colores de una imagen de referencia, ordenados de la luz a la sombra, y mirala pintada solo con ellos. Parte de Palettekit.">
+<script>
+/* Hides the page until js/i18n.js has translated it, when the language isn't
+   the markup's (Spanish). Mirrors detect() in js/i18n.js; the timeout keeps
+   the page from staying hidden if scripts fail. */
+(function(){try{var l=localStorage.getItem('pk-lang');if(l!=='es'&&l!=='en'){l='en';var ls=navigator.languages||[navigator.language];for(var i=0;i<ls.length;i++){var c=(ls[i]||'').slice(0,2).toLowerCase();if(c==='es'||c==='en'){l=c;break}}}if(l!=='es'){var d=document.documentElement;d.classList.add('i18n-loading');setTimeout(function(){d.classList.remove('i18n-loading')},2500)}}catch(e){}})();
+</script>
+<title data-i18n="photo.pageTitle">Paleta desde una foto · Palettekit</title>
+<meta name="description" data-i18n-attr="content:photo.description" content="Sacá los colores de una imagen de referencia, ordenados de la luz a la sombra, y mirala pintada solo con ellos. Parte de Palettekit.">
 <meta name="theme-color" content="#ECEDEF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15171B" media="(prefers-color-scheme: dark)">
 <link rel="canonical" href="https://palettekit.fardus.dev/foto/">
@@ -31,36 +37,47 @@
     <img src="/logo.svg" alt="" width="32" height="33">
     <span>Palettekit</span>
   </a>
-  <nav aria-label="Herramientas">
-    <p class="nav-h">Herramientas</p>
+  <nav aria-label="Herramientas" data-i18n-attr="aria-label:nav.tools">
+    <p class="nav-h" data-i18n="nav.tools">Herramientas</p>
     <ul>
       <li>
         <a href="/">
           <svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>
-          Generador de paletas
+          <span data-i18n="nav.generator">Generador de paletas</span>
         </a>
       </li>
       <li>
         <a href="/foto/" aria-current="page">
           <svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg>
-          Paleta desde una foto
+          <span data-i18n="nav.photo">Paleta desde una foto</span>
         </a>
       </li>
       <li>
         <a href="/crear/">
           <svg class="icon" aria-hidden="true"><use href="/icons.svg#swatch-book"/></svg>
-          Creador de paletas
+          <span data-i18n="nav.create">Creador de paletas</span>
         </a>
       </li>
     </ul>
   </nav>
-  <p class="sidebar-foot">Herramientas para armar tus propias paletas.</p>
+  <div class="sidebar-foot">
+    <p class="tagline" data-i18n="site.tagline">Herramientas para armar tus propias paletas.</p>
+    <div class="settings">
+      <div class="settings-panel" id="settingsPanel" role="group" aria-label="Configuración" data-i18n-attr="aria-label:settings.title" hidden>
+        <fieldset class="lang-field">
+          <legend><svg class="icon" aria-hidden="true"><use href="/icons.svg#languages"/></svg><span data-i18n="settings.language">Idioma</span></legend>
+          <div class="lang-options" id="langOptions"></div>
+        </fieldset>
+      </div>
+      <button class="settings-btn" id="settingsBtn" type="button" aria-expanded="false" aria-controls="settingsPanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#settings"/></svg><span data-i18n="settings.title">Configuración</span></button>
+    </div>
+  </div>
 </aside>
 <div class="scrim" id="scrim" hidden></div>
 
 <div class="content">
 <div class="topbar">
-  <button id="menuBtn" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú">
+  <button id="menuBtn" class="icon-btn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú" data-i18n-attr="aria-label:nav.openMenu">
     <svg class="icon" aria-hidden="true"><use href="/icons.svg#menu"/></svg>
   </button>
   <a class="brand" href="/">
@@ -71,13 +88,13 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Paleta desde una foto</h1>
-      <p class="lede">Sacá los colores de una referencia, ordenados de la luz a la sombra, y mirá cómo queda pintada solo con ellos. La imagen se procesa en tu navegador: no se sube a ningún lado.</p>
+      <h1 data-i18n="photo.h1">Paleta desde una foto</h1>
+      <p class="lede" data-i18n="photo.lede">Sacá los colores de una referencia, ordenados de la luz a la sombra, y mirá cómo queda pintada solo con ellos. La imagen se procesa en tu navegador: no se sube a ningún lado.</p>
     </div>
     <div class="actions">
-      <button id="copyAll" type="button" disabled><svg class="icon" aria-hidden="true"><use href="/icons.svg#copy"/></svg>Copiar hex</button>
-      <button id="exportCsp" type="button" disabled title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta"><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg>Exportar a Clip Studio</button>
-      <button id="toGenerator" class="primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>Abrir en el generador</button>
+      <button id="copyAll" type="button" disabled><svg class="icon" aria-hidden="true"><use href="/icons.svg#copy"/></svg><span data-i18n="common.copyHex">Copiar hex</span></button>
+      <button id="exportCsp" type="button" disabled title="Descarga un .zip con el set de colores (.aco) y una imagen de la paleta" data-i18n-attr="title:common.exportCspTitle"><svg class="icon" aria-hidden="true"><use href="/icons.svg#download"/></svg><span data-i18n="common.exportCsp">Exportar a Clip Studio</span></button>
+      <button id="toGenerator" class="primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg><span data-i18n="common.toGenerator">Abrir en el generador</span></button>
     </div>
   </header>
 
@@ -85,69 +102,69 @@
     <div class="foto-top">
       <div class="card" id="imageCard">
         <div class="row">
-          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg>Imagen</span>
-          <button id="changeImg" class="small" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#upload"/></svg>Cambiar</button>
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg><span data-i18n="photo.image">Imagen</span></span>
+          <button id="changeImg" class="small" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#upload"/></svg><span data-i18n="photo.change">Cambiar</span></button>
         </div>
         <label class="dropzone" id="dropzone">
           <input id="file" type="file" accept="image/*" class="sr-only">
           <svg class="icon" aria-hidden="true"><use href="/icons.svg#upload"/></svg>
-          <strong>Elegí una imagen</strong>
-          <span>o arrastrala acá, o pegala con Ctrl+V</span>
+          <strong data-i18n="photo.choose">Elegí una imagen</strong>
+          <span data-i18n="photo.dropHint">o arrastrala acá, o pegala con Ctrl+V</span>
         </label>
-        <img id="preview" class="foto-img" alt="Imagen de referencia" hidden>
+        <img id="preview" class="foto-img" alt="Imagen de referencia" data-i18n-attr="alt:photo.previewAlt" hidden>
       </div>
       <div class="card">
         <div class="row">
-          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sun"/></svg>Con la paleta</span>
-          <label class="check"><input id="bw" type="checkbox"> Ver en grises</label>
+          <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#sun"/></svg><span data-i18n="photo.withPalette">Con la paleta</span></span>
+          <label class="check"><input id="bw" type="checkbox"> <span data-i18n="common.showGrey">Ver en grises</span></label>
         </div>
-        <canvas id="poster" class="foto-img" role="img" aria-label="La imagen repintada solo con los colores de la paleta" hidden></canvas>
-        <p class="empty-note" id="posterEmpty">Cargá una imagen para verla pintada solo con los colores que se extraigan.</p>
+        <canvas id="poster" class="foto-img" role="img" aria-label="La imagen repintada solo con los colores de la paleta" data-i18n-attr="aria-label:photo.posterLabel" hidden></canvas>
+        <p class="empty-note" id="posterEmpty" data-i18n="photo.posterEmpty">Cargá una imagen para verla pintada solo con los colores que se extraigan.</p>
         <div class="recolor-bar" id="recolorBar" hidden>
-          <select id="harmony" aria-label="Armonía para recolorear">
-            <option value="random">Al azar</option>
-            <option value="analogous">Análoga</option>
-            <option value="complementary">Complementaria</option>
-            <option value="split">Complementaria dividida</option>
-            <option value="triad">Tríada</option>
-            <option value="mono">Monocromática</option>
+          <select id="harmony" aria-label="Armonía para recolorear" data-i18n-attr="aria-label:photo.harmonyLabel">
+            <option value="random" data-i18n="harmony.random">Al azar</option>
+            <option value="analogous" data-i18n="harmony.analogous">Análoga</option>
+            <option value="complementary" data-i18n="harmony.complementary">Complementaria</option>
+            <option value="split" data-i18n="harmony.split">Complementaria dividida</option>
+            <option value="triad" data-i18n="harmony.triad">Tríada</option>
+            <option value="mono" data-i18n="harmony.mono">Monocromática</option>
           </select>
-          <select id="temp" aria-label="Temperatura para recolorear">
-            <option value="none">Temperatura libre</option>
-            <option value="warmLight">Luces cálidas, sombras frías</option>
-            <option value="coolLight">Luces frías, sombras cálidas</option>
+          <select id="temp" aria-label="Temperatura para recolorear" data-i18n-attr="aria-label:photo.tempLabel">
+            <option value="none" data-i18n="photo.tempNone">Temperatura libre</option>
+            <option value="warmLight" data-i18n="temp.warmLight">Luces cálidas, sombras frías</option>
+            <option value="coolLight" data-i18n="temp.coolLight">Luces frías, sombras cálidas</option>
           </select>
-          <button id="recolorBtn" class="small accent" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#dices"/></svg>Randomizar colores</button>
-          <button id="resetColors" class="small" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#refresh-cw"/></svg>Originales</button>
-          <p class="hint">Mismos values y saturaciones que la foto, con los tonos de una armonía nueva.</p>
+          <button id="recolorBtn" class="small accent" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#dices"/></svg><span data-i18n="photo.randomize">Randomizar colores</span></button>
+          <button id="resetColors" class="small" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#refresh-cw"/></svg><span data-i18n="photo.originals">Originales</span></button>
+          <p class="hint" data-i18n="photo.recolorHint">Mismos values y saturaciones que la foto, con los tonos de una armonía nueva.</p>
         </div>
       </div>
     </div>
 
     <div class="palette-bar">
-      <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg>Paleta</span>
+      <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg><span data-i18n="common.palette">Paleta</span></span>
       <div class="palette-controls">
-        <label class="check"><input id="auto" type="checkbox"> Automático</label>
+        <label class="check"><input id="auto" type="checkbox"> <span data-i18n="photo.auto">Automático</span></label>
         <div class="field inline" id="countField">
-          <label for="count">Colores <output id="countOut">5</output></label>
+          <label for="count"><span data-i18n="photo.colors">Colores</span> <output id="countOut">5</output></label>
           <input id="count" type="range" min="3" max="24" step="1" value="5">
         </div>
         <div class="field inline" id="detailField" hidden>
-          <label for="detail">Detalle <output id="detailOut">6</output></label>
+          <label for="detail"><span data-i18n="photo.detail">Detalle</span> <output id="detailOut">6</output></label>
           <input id="detail" type="range" min="1" max="10" step="1" value="6">
         </div>
       </div>
     </div>
     <p class="hint palette-note" id="paletteNote" hidden></p>
     <div id="swatches" class="swatches foto-swatches">
-      <p class="empty-note">Acá van a aparecer los colores de la imagen, del más claro al más oscuro.</p>
+      <p class="empty-note" data-i18n="photo.empty">Acá van a aparecer los colores de la imagen, del más claro al más oscuro.</p>
     </div>
 
     <div class="gray-wrap" id="strips" hidden>
-      <span class="section-h">Cuánto ocupa cada color</span>
+      <span class="section-h" data-i18n="photo.shareStrip">Cuánto ocupa cada color</span>
       <div id="share" class="grey" aria-hidden="true"></div>
       <div class="row">
-        <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg>Prueba en blanco y negro</span>
+        <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#contrast"/></svg><span data-i18n="common.greyTest">Prueba en blanco y negro</span></span>
         <span class="warn" id="gapInfo"></span>
       </div>
       <div id="grey" class="grey" aria-hidden="true"></div>

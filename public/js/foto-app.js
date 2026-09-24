@@ -3,13 +3,14 @@
 // Nothing leaves the browser.
 
 import { greyHex, textOn, valueOfHex } from './color.js';
-import { GAP_WARN, HARMONIES, minGap, roleFor, TEMPERATURES } from './palette.js';
+import { t } from './i18n.js';
+import { HARMONIES, minGap, roleFor, TEMPERATURES } from './palette.js';
 import { DETAIL_DEFAULT, DETAIL_MAX, DETAIL_MIN, extractAuto, extractPalette, posterize, topByShare } from './extract.js';
 import { recolor, rerollOne } from './recolor.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { MAX_COLORS, MIN_COLORS, paletteParam } from './storage.js';
 import { setIcon } from './icons.js';
-import { announce, button, copy, el, iconButton, toast } from './ui.js';
+import { announce, button, copy, el, iconButton, showGap, toast } from './ui.js';
 
 const $ = id => document.getElementById(id);
 // Longest side, in pixels, of the copies used to extract (small: fast and
@@ -29,7 +30,7 @@ let focused = -1;   // color shown alone on the repainted image, -1 for none
 let previewUrl = null;
 
 const isRecolored = () => colors.some((c, i) => c.hex !== extracted[i]?.hex);
-const pct = share => share < 0.005 ? '<1%' : `${Math.round(share * 100)}%`;
+const pct = share => (share < 0.005 ? '<1%' : `${Math.round(share * 100)}%`);
 
 /* ---------- prefs (per viewer, best effort) ---------- */
 const intIn = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
@@ -72,13 +73,13 @@ function pixels(img, maxSide) {
 }
 
 async function loadFile(file) {
-  if (!file || !file.type.startsWith('image/')) { toast('Eso no parece una imagen'); return; }
+  if (!file || !file.type.startsWith('image/')) { toast(t('photo.notImage')); return; }
   const url = URL.createObjectURL(file);
   const probe = new Image();
   probe.src = url;
   try { await probe.decode(); } catch {
     URL.revokeObjectURL(url);
-    toast('No se pudo abrir la imagen');
+    toast(t('photo.openFailed'));
     return;
   }
   if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -100,26 +101,26 @@ function extract() {
   colors = extracted;
   locked = extracted.map(() => false);
   focused = -1;
-  if (!extracted.length) toast('La imagen es toda transparente');
+  if (!extracted.length) toast(t('photo.transparent'));
   render();
-  announce(`Paleta de la imagen: ${colors.length} colores. Values ${colors.map(c => valueOfHex(c.hex).toFixed(1)).join(', ')}`);
+  announce(t('photo.announce', { n: colors.length, values: colors.map(c => valueOfHex(c.hex).toFixed(1)).join(', ') }));
 }
 
 // Always recolors from the photo's own colors, so repeated rolls keep its
 // hue relations; locked colors keep whatever they show now.
 function recolorNow() {
   if (!extracted.length) return;
-  if (locked.every(Boolean)) { toast('Todos los colores están fijados'); return; }
+  if (locked.every(Boolean)) { toast(t('photo.allLocked')); return; }
   const next = recolor(extracted, { harmony: $('harmony').value, temp: $('temp').value });
   colors = next.map((c, i) => (locked[i] ? colors[i] : c));
   render();
-  announce('Colores nuevos con los mismos values de la foto');
+  announce(t('photo.recoloredAnnounce'));
 }
 
 function resetColors() {
   colors = extracted.map((c, i) => (locked[i] ? colors[i] : c));
   render();
-  announce('Colores originales de la foto');
+  announce(t('photo.originalsAnnounce'));
 }
 
 function reroll(i) {
@@ -127,7 +128,7 @@ function reroll(i) {
   colors = rerollOne(colors, i, { temp: $('temp').value });
   render();
   if (keepFocus) $('swatches').children[i]?.querySelector('.reroll')?.focus();
-  toast(`Color nuevo: ${colors[i].hex}`);
+  toast(t('common.newColor', { hex: colors[i].hex }));
 }
 
 // Shows one color alone on the repainted image, the rest in grey. Updated in
@@ -140,12 +141,12 @@ function toggleFocus(i) {
   });
   $('swatches').classList.toggle('has-focus', focused >= 0);
   drawPoster();
-  announce(focused >= 0 ? `Mostrando solo ${colors[focused].hex} en la imagen` : 'Mostrando todos los colores');
+  announce(focused >= 0 ? t('photo.showingOnly', { hex: colors[focused].hex }) : t('photo.showingAll'));
 }
 
 function setLock(btn, rerollBtn, on) {
   btn.setAttribute('aria-pressed', String(on));
-  btn.title = on ? 'Fijado: no cambia al randomizar' : 'Fijar';
+  btn.title = on ? t('photo.lockedTitle') : t('common.lock');
   setIcon(btn, on ? 'lock' : 'lock-open');
   rerollBtn.disabled = on;
 }
@@ -162,17 +163,17 @@ function render() {
     card.style.background = c.hex;
     card.style.color = textOn(c.hex);
     const top = el('div', 'top');
-    top.append(el('div', 'vlab', 'Value'), el('div', 'v', v.toFixed(1)));
+    top.append(el('div', 'vlab', t('common.value')), el('div', 'v', v.toFixed(1)));
     const hexBtn = button('hex', c.hex);
-    hexBtn.title = 'Copiar';
-    hexBtn.addEventListener('click', () => copy(c.hex, `${c.hex} copiado`));
-    const spot = iconButton('spot', 'eye', `Ver solo ${c.hex} en la imagen`);
+    hexBtn.title = t('common.copy');
+    hexBtn.addEventListener('click', () => copy(c.hex, t('common.copied', { hex: c.hex })));
+    const spot = iconButton('spot', 'eye', t('photo.showOnly', { hex: c.hex }));
     spot.setAttribute('aria-pressed', String(i === focused));
     spot.addEventListener('click', () => toggleFocus(i));
-    const again = iconButton('reroll', 'refresh-cw', `Otro color con value ${v.toFixed(1)}`);
+    const again = iconButton('reroll', 'refresh-cw', t('common.reroll', { v: v.toFixed(1) }));
     again.addEventListener('click', () => reroll(i));
     // Toggled in place: re-rendering would drop keyboard focus.
-    const lock = iconButton('lock', 'lock-open', `Fijar ${c.hex}`);
+    const lock = iconButton('lock', 'lock-open', t('common.lockHex', { hex: c.hex }));
     setLock(lock, again, locked[i]);
     lock.addEventListener('click', () => { locked[i] = !locked[i]; setLock(lock, again, locked[i]); });
     const tools = el('div', 'tools');
@@ -180,7 +181,7 @@ function render() {
 
     const bottom = el('div', 'bottom');
     // Already light to dark, so the position is the rank.
-    bottom.append(el('span', 'role', roleFor(i, n, v)), el('span', 'share-pct', `${pct(c.share)} de la imagen`), hexBtn, tools);
+    bottom.append(el('span', 'role', t('role.' + roleFor(i, n, v))), el('span', 'share-pct', t('photo.shareOf', { pct: pct(c.share) })), hexBtn, tools);
     card.append(top, bottom);
     card.classList.toggle('focused', i === focused);
     // Clicking the card itself (not one of its buttons) does the same as the eye.
@@ -195,13 +196,12 @@ function render() {
   $('grey').replaceChildren(...vs.map(v => { const s = el('span'); s.style.background = greyHex(v); return s; }));
   const gap = minGap(vs), info = $('gapInfo');
   if (n < 2) info.textContent = '';
-  else if (gap < GAP_WARN) info.replaceChildren(el('strong', null, 'Ojo:'), ` hay values a ${gap.toFixed(1)} de distancia, pueden confundirse.`);
-  else info.textContent = `Salto mínimo entre values: ${gap.toFixed(1)}`;
+  else showGap(info, gap);
 
   const notes = [];
-  if ($('auto').checked && n) notes.push(`Se encontraron ${n} colores distintos.`);
-  if (isRecolored()) notes.push('Recoloreada: mismos values, saturaciones y proporciones que la foto.');
-  if (n > MAX_COLORS) notes.push(`El generador trabaja con hasta ${MAX_COLORS}: se lleva los ${MAX_COLORS} que más ocupan.`);
+  if ($('auto').checked && n) notes.push(t('photo.noteFound', { n }));
+  if (isRecolored()) notes.push(t('photo.noteRecolored'));
+  if (n > MAX_COLORS) notes.push(t('photo.noteLimit', { max: MAX_COLORS }));
   $('paletteNote').textContent = notes.join(' ');
   $('paletteNote').hidden = !notes.length;
 
@@ -209,7 +209,7 @@ function render() {
   $('exportCsp').disabled = !n;
   const tg = $('toGenerator');
   tg.disabled = n < MIN_COLORS;
-  tg.title = n && n < MIN_COLORS ? `El generador necesita al menos ${MIN_COLORS} colores` : 'Seguí trabajando esta paleta en el generador';
+  tg.title = n && n < MIN_COLORS ? t('common.genMin', { min: MIN_COLORS }) : t('common.genContinue');
   $('recolorBar').hidden = !n;
   $('resetColors').hidden = !isRecolored();
   drawPoster();
@@ -265,7 +265,7 @@ $('resetColors').addEventListener('click', resetColors);
 // Picking a harmony or temperature is asking to see it: recolor right away.
 ['harmony', 'temp'].forEach(id => $(id).addEventListener('change', () => { savePrefs(); recolorNow(); }));
 
-$('copyAll').addEventListener('click', () => copy(colors.map(c => c.hex).join('\n'), 'Hex de la paleta copiados'));
+$('copyAll').addEventListener('click', () => copy(colors.map(c => c.hex).join('\n'), t('common.hexCopied')));
 $('exportCsp').addEventListener('click', async () => {
   const cols = colors.map(c => c.hex);
   try {
@@ -274,9 +274,9 @@ $('exportCsp').addEventListener('click', async () => {
       { name: 'palettekit-foto.png', data: await palettePng(cols) },
     ]);
     download(zip, 'palettekit-foto.zip', 'application/zip');
-    toast('Descargado. Arrastrá el .aco al panel Set de colores');
+    toast(t('common.acoDownloaded'));
   } catch {
-    toast('No se pudo armar el archivo');
+    toast(t('common.exportFailed'));
   }
 });
 $('toGenerator').addEventListener('click', () => {

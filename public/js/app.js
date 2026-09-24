@@ -1,12 +1,13 @@
 // DOM wiring: reads the settings, keeps the current palette and history, renders.
 
 import { greyHex, textOn, valueOfHex } from './color.js';
-import { adjustPalette, GAP_WARN, generatePalette, minGap, rankOf, rerollColor, roleFor, setColorValue, sortPalette } from './palette.js';
+import { t, tn } from './i18n.js';
+import { adjustPalette, generatePalette, minGap, rankOf, rerollColor, roleFor, setColorValue, sortPalette } from './palette.js';
 import { addToHistory, load, paletteFromParam, removeFromHistory, saveHistory, saveSettings } from './storage.js';
 import { drawSphere } from './sphere.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { setIcon } from './icons.js';
-import { announce as say, button, copy, el, iconButton, toast } from './ui.js';
+import { announce as say, button, copy, el, iconButton, showGap, toast } from './ui.js';
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -73,7 +74,7 @@ function adjust() {
 function apply({ colors, locked, recipes, dropped }) {
   setPalette({ colors, locked, recipes });
   announce();
-  if (dropped) toast(dropped === 1 ? 'Se soltó un color fijado: no entraba en la escala' : `Se soltaron ${dropped} colores fijados: no entraban en la escala`);
+  if (dropped) toast(tn('gen.dropped', dropped));
 }
 
 function onSettingChange(key) {
@@ -87,7 +88,7 @@ function reroll(i) {
   const next = rerollColor(readSettings(), palette, i);
   setPalette(next);
   if (keepFocus) $('swatches').children[i]?.querySelector('.reroll')?.focus();
-  toast(`Color nuevo: ${next.colors[i]}`);
+  toast(t('common.newColor', { hex: next.colors[i] }));
 }
 
 function restore(cols) {
@@ -100,7 +101,7 @@ function restore(cols) {
 /* ---------- render ---------- */
 function setLock(btn, rerollBtn, on) {
   btn.setAttribute('aria-pressed', String(on));
-  btn.title = on ? 'Fijado: no cambia al generar' : 'Fijar';
+  btn.title = on ? t('gen.lockedTitle') : t('common.lock');
   setIcon(btn, on ? 'lock' : 'lock-open');
   // A locked color can't be rerolled either.
   rerollBtn.disabled = on;
@@ -127,14 +128,14 @@ function swatch(i, n) {
   const vText = el('div', 'v');
   const role = el('span', 'role');
   const hexBtn = button('hex');
-  hexBtn.title = 'Copiar';
-  hexBtn.addEventListener('click', () => copy(palette.colors[i], `${palette.colors[i]} copiado`));
+  hexBtn.title = t('common.copy');
+  hexBtn.addEventListener('click', () => copy(palette.colors[i], t('common.copied', { hex: palette.colors[i] })));
   const again = iconButton('reroll', 'refresh-cw', '');
   again.addEventListener('click', () => reroll(i));
   const lock = iconButton('lock', 'lock-open', '');
 
   const top = el('div', 'top');
-  top.append(el('div', 'vlab', 'Value'), vText);
+  top.append(el('div', 'vlab', t('common.value')), vText);
 
   // Without scaling, each color's value can be set by hand. The card is
   // repainted in place while dragging; the palette is re-sorted on release.
@@ -158,14 +159,14 @@ function swatch(i, n) {
     sw.style.background = hex;
     sw.style.color = textOn(hex);
     vText.textContent = v.toFixed(1);
-    role.textContent = roleFor(rankOf(palette.colors.map(valueOfHex), i), n, v);
+    role.textContent = t('role.' + roleFor(rankOf(palette.colors.map(valueOfHex), i), n, v));
     hexBtn.textContent = hex;
-    again.setAttribute('aria-label', `Otro color con value ${v.toFixed(1)}`);
+    again.setAttribute('aria-label', t('common.reroll', { v: v.toFixed(1) }));
     again.title = again.getAttribute('aria-label');
-    lock.setAttribute('aria-label', `Fijar ${hex}`);
+    lock.setAttribute('aria-label', t('common.lockHex', { hex }));
     if (range) {
       range.value = v.toFixed(1);
-      range.setAttribute('aria-label', `Value de ${hex}`);
+      range.setAttribute('aria-label', t('gen.valueOf', { hex }));
       range.setAttribute('aria-valuetext', v.toFixed(1));
     }
   }
@@ -211,19 +212,18 @@ function renderGrey() {
   }));
   const gap = minGap(vs), info = $('gapInfo');
   if (!els.scale.checked) info.textContent = '';
-  else if (gap < GAP_WARN) info.replaceChildren(el('strong', null, 'Ojo:'), ` dos values están a ${gap.toFixed(1)} de distancia, pueden confundirse.`);
-  else info.textContent = `Salto mínimo entre values: ${gap.toFixed(1)}`;
+  else showGap(info, gap);
 }
 
 function renderHistory() {
   const h = $('hist');
   if (!history.length) {
-    h.replaceChildren(el('span', 'empty', 'Las paletas que generes van a aparecer acá. Tocá una para recuperarla.'));
+    h.replaceChildren(el('span', 'empty', t('gen.historyEmpty')));
     return;
   }
   h.replaceChildren(...history.map(cols => {
     const b = button();
-    b.setAttribute('aria-label', 'Recuperar paleta ' + cols.join(' '));
+    b.setAttribute('aria-label', t('gen.restore', { colors: cols.join(' ') }));
     cols.forEach(c => { const s = el('span'); s.style.background = c; b.appendChild(s); });
     b.addEventListener('click', () => restore(cols));
     return b;
@@ -231,7 +231,7 @@ function renderHistory() {
 }
 
 /* ---------- feedback ---------- */
-const announce = () => say('Paleta: values ' + palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', '));
+const announce = () => say(t('gen.announce', { values: palette.colors.map(h => valueOfHex(h).toFixed(1)).join(', ') }));
 
 /* ---------- events ---------- */
 // Narrow layouts: settings collapse into a toggle above the palette (the
@@ -241,7 +241,7 @@ $('controlsToggle').addEventListener('click', () => {
   $('controlsToggle').setAttribute('aria-expanded', String(open));
 });
 $('gen').addEventListener('click', generate);
-$('copyAll').addEventListener('click', () => copy(palette.colors.join('\n'), 'Hex de la paleta copiados'));
+$('copyAll').addEventListener('click', () => copy(palette.colors.join('\n'), t('common.hexCopied')));
 
 $('exportCsp').addEventListener('click', async () => {
   const cols = palette.colors.slice();
@@ -251,9 +251,9 @@ $('exportCsp').addEventListener('click', async () => {
       { name: 'palettekit.png', data: await palettePng(cols) },
     ]);
     download(zip, 'palettekit.zip', 'application/zip');
-    toast('Descargado. Arrastrá el .aco al panel Set de colores');
+    toast(t('common.acoDownloaded'));
   } catch {
-    toast('No se pudo armar el archivo');
+    toast(t('common.exportFailed'));
   }
 });
 
@@ -300,7 +300,7 @@ if (incoming) {
   // scaled palette is always light to dark, and an unscaled one follows "Ordenar por value".
   const received = { colors: incoming, locked: incoming.map(() => false) };
   setPalette(els.scale.checked || els.order.checked ? sortPalette(received) : received);
-  toast('Paleta traída de otra herramienta');
+  toast(t('gen.received'));
 } else {
   setPalette(saved.palette ?? { colors: FIRST_PALETTE, locked: FIRST_PALETTE.map(() => false) });
 }
