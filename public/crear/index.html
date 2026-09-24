@@ -112,7 +112,7 @@
       <p class="lede" data-i18n="create.lede">Armá una paleta a mano: arrancá al azar, pegando hex de cualquier lado o de cero, y llevala como imagen, link o set de colores.</p>
     </div>
     <div class="actions">
-      <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pastePanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#clipboard-paste"/></svg><span data-i18n="create.paste">Pegar hex</span></button>
+      <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pastePanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#clipboard-paste"/></svg><span data-i18n="common.pasteHex">Pegar hex</span></button>
       <button id="clearBtn" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#eraser"/></svg><span data-i18n="create.clear">Empezar de cero</span></button>
       <button id="randomBtn" class="primary" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#dices"/></svg><span data-i18n="create.random">Al azar</span></button>
     </div>
@@ -120,11 +120,11 @@
 
   <div class="crear-main">
     <div class="card paste-panel" id="pastePanel" hidden>
-      <label for="pasteText" class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#clipboard-paste"/></svg><span data-i18n="create.pasteTitle">Pegá tus colores</span></label>
+      <label for="pasteText" class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#clipboard-paste"/></svg><span data-i18n="common.pasteTitle">Pegá tus colores</span></label>
       <textarea id="pasteText" rows="4" placeholder="#F2E3B3&#10;#D98E73&#10;#4F7A6B" spellcheck="false"></textarea>
       <p class="hint" data-i18n="create.pasteHint">Sirve lo que copiás con "Copiar hex" en las otras herramientas, un link de paleta o cualquier texto con colores hex (CSS, listas con comas…). Hasta 24.</p>
       <div class="row-start">
-        <button id="pasteUse" class="small accent" type="button" data-i18n="create.pasteUse">Usar estos colores</button>
+        <button id="pasteUse" class="small accent" type="button" data-i18n="common.pasteUse">Usar estos colores</button>
         <button id="pasteAdd" class="small" type="button" data-i18n="create.pasteAdd">Agregarlos a la paleta</button>
         <button id="pasteCancel" class="small" type="button" data-i18n="common.cancel">Cancelar</button>
       </div>

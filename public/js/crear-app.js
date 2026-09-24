@@ -160,7 +160,7 @@ function sortByValue() {
 }
 function importText(text, { append = false } = {}) {
   const found = parseHexList(text);
-  if (!found.length) { toast(t('create.noHex')); return false; }
+  if (!found.length) { toast(t('common.noHex')); return false; }
   const next = append ? [...colors, ...found].slice(0, LIST_MAX) : found;
   commit(next);
   toast(tn(append ? 'create.added' : 'create.pasted', found.length));

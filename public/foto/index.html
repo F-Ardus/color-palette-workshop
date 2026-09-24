@@ -157,23 +157,44 @@
           </select>
           <button id="recolorBtn" class="small accent" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#dices"/></svg><span data-i18n="photo.randomize">Randomizar colores</span></button>
           <button id="resetColors" class="small" type="button" hidden><svg class="icon" aria-hidden="true"><use href="/icons.svg#refresh-cw"/></svg><span data-i18n="photo.originals">Originales</span></button>
-          <p class="hint" data-i18n="photo.recolorHint">Mismos values y saturaciones que la foto, con los tonos de una armonía nueva.</p>
+          <p class="hint" id="recolorHint" data-i18n="photo.recolorHint">Mismos values y saturaciones que la foto, con los tonos de una armonía nueva.</p>
         </div>
       </div>
     </div>
 
     <div class="palette-bar">
-      <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg><span data-i18n="common.palette">Paleta</span></span>
+      <span class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#palette"/></svg><span id="paletteTitle" data-i18n="common.palette">Paleta</span></span>
       <div class="palette-controls">
-        <label class="check"><input id="auto" type="checkbox"> <span data-i18n="photo.auto">Automático</span></label>
-        <div class="field inline" id="countField">
-          <label for="count"><span data-i18n="photo.colors">Colores</span> <output id="countOut">5</output></label>
-          <input id="count" type="range" min="3" max="24" step="1" value="5">
+        <!-- Extracting from the photo -->
+        <div class="mode-controls" id="photoControls">
+          <label class="check"><input id="auto" type="checkbox"> <span data-i18n="photo.auto">Automático</span></label>
+          <div class="field inline" id="countField">
+            <label for="count"><span data-i18n="photo.colors">Colores</span> <output id="countOut">5</output></label>
+            <input id="count" type="range" min="3" max="24" step="1" value="5">
+          </div>
+          <div class="field inline" id="detailField" hidden>
+            <label for="detail"><span data-i18n="photo.detail">Detalle</span> <output id="detailOut">6</output></label>
+            <input id="detail" type="range" min="1" max="10" step="1" value="6">
+          </div>
         </div>
-        <div class="field inline" id="detailField" hidden>
-          <label for="detail"><span data-i18n="photo.detail">Detalle</span> <output id="detailOut">6</output></label>
-          <input id="detail" type="range" min="1" max="10" step="1" value="6">
+        <!-- Trying a pasted palette on the photo -->
+        <div class="mode-controls" id="ownControls" hidden>
+          <select id="mapping" aria-label="Cómo repintar la imagen" data-i18n-attr="aria-label:photo.mappingLabel">
+            <option value="color" data-i18n="photo.byColor">Repintar por color</option>
+            <option value="value" data-i18n="photo.byValue">Repintar por value</option>
+          </select>
+          <button id="backToPhoto" class="small" type="button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#image"/></svg><span data-i18n="photo.backToPhoto">Volver a los colores de la foto</span></button>
         </div>
+        <button id="pasteBtn" class="small" type="button" aria-expanded="false" aria-controls="pastePanel"><svg class="icon" aria-hidden="true"><use href="/icons.svg#clipboard-paste"/></svg><span data-i18n="common.pasteHex">Pegar hex</span></button>
+      </div>
+    </div>
+    <div class="card paste-panel" id="pastePanel" hidden>
+      <label for="pasteText" class="section-h"><svg class="icon" aria-hidden="true"><use href="/icons.svg#clipboard-paste"/></svg><span data-i18n="common.pasteTitle">Pegá tus colores</span></label>
+      <textarea id="pasteText" rows="4" placeholder="#F2E3B3&#10;#D98E73&#10;#4F7A6B" spellcheck="false"></textarea>
+      <p class="hint" data-i18n="photo.pasteHint">Pegá la paleta que quieras probar sobre la imagen: lo que copiás con "Copiar hex" en las otras herramientas, un link de paleta o cualquier texto con colores hex. Hasta 24.</p>
+      <div class="row-start">
+        <button id="pasteUse" class="small accent" type="button" data-i18n="common.pasteUse">Usar estos colores</button>
+        <button id="pasteCancel" class="small" type="button" data-i18n="common.cancel">Cancelar</button>
       </div>
     </div>
     <p class="hint palette-note" id="paletteNote" hidden></p>

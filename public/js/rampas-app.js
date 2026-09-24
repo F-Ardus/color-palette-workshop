@@ -127,6 +127,11 @@ $('space').addEventListener('change', () => update({ space: $('space').value }))
 $('even').addEventListener('change', () => update({ even: $('even').checked }));
 $('compare').addEventListener('change', () => update({ compare: $('compare').checked }));
 
+$('resetBtn').addEventListener('click', () => {
+  update({ ...DEFAULTS });
+  toast(t('common.resetDone'));
+});
+
 $('copyAll').addEventListener('click', () => copy(colors.join('\n'), t('common.hexCopied')));
 $('exportCsp').addEventListener('click', async () => {
   try {

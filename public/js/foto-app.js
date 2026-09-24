@@ -1,17 +1,20 @@
 // "Paleta desde una foto": load an image, extract its colors, show them and the
 // image repainted with them, optionally recolored with a generated harmony.
-// Nothing leaves the browser.
+// Or try a palette of your own (pasted hex) on the image, repainting it by
+// color or by value. Nothing leaves the browser.
 
 import { greyHex, textOn, valueOfHex } from './color.js';
-import { t } from './i18n.js';
+import { t, tn } from './i18n.js';
 import { HARMONIES, minGap, roleFor, TEMPERATURES } from './palette.js';
-import { DETAIL_DEFAULT, DETAIL_MAX, DETAIL_MIN, extractAuto, extractPalette, posterize, topByShare } from './extract.js';
+import {
+  DETAIL_DEFAULT, DETAIL_MAX, DETAIL_MIN, extractAuto, extractPalette, mapPixels, paletteFromHexes, posterize, sharesOf, topByShare,
+} from './extract.js';
 import { recolor, rerollOne } from './recolor.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { MAX_COLORS, MIN_COLORS, paletteParam } from './storage.js';
 import { setIcon } from './icons.js';
 import { pixels, setupImageInput } from './image-input.js';
-import { hexListParam } from './hexlist.js';
+import { colorsFromParam, hexListParam, parseHexList } from './hexlist.js';
 import { announce, button, copy, el, iconButton, showGap, toast } from './ui.js';
 
 const $ = id => document.getElementById(id);
@@ -29,6 +32,13 @@ let extracted = []; // [{hex, share, lab}], light to dark, as found in the image
 let colors = [];    // what's shown: `extracted` or a recolored version of it
 let locked = [];    // per color: kept by "Randomizar colores" and not rerollable
 let focused = -1;   // color shown alone on the repainted image, -1 for none
+// Where the palette comes from: "photo" (extracted from the image) or "own"
+// (pasted by the user and matched to the image by color or by value).
+let mode = 'photo';
+let ownHexes = [];
+const MAPPINGS = ['color', 'value'];
+const mapping = () => (mode === 'own' ? $('mapping').value : 'color');
+const TYPING = /^(INPUT|TEXTAREA|SELECT)$/;
 
 const isRecolored = () => colors.some((c, i) => c.hex !== extracted[i]?.hex);
 const pct = share => (share < 0.005 ? '<1%' : `${Math.round(share * 100)}%`);
@@ -44,12 +54,13 @@ function loadPrefs() {
   $('bw').checked = p.bw === true;
   if (HARMONIES.includes(p.harmony)) $('harmony').value = p.harmony;
   if (TEMPERATURES.includes(p.temp)) $('temp').value = p.temp;
+  if (MAPPINGS.includes(p.mapping)) $('mapping').value = p.mapping;
   updateCountFields();
 }
 function savePrefs() {
   const p = {
     count: +$('count').value, detail: +$('detail').value, auto: $('auto').checked, bw: $('bw').checked,
-    harmony: $('harmony').value, temp: $('temp').value,
+    harmony: $('harmony').value, temp: $('temp').value, mapping: $('mapping').value,
   };
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch { /* not saved */ }
 }
@@ -64,20 +75,83 @@ function updateCountFields() {
 /* ---------- image ---------- */
 setupImageInput(img => {
   source = { analysis: pixels(img, ANALYSIS_MAX), poster: pixels(img, POSTER_MAX) };
+  // With a palette of your own, a new image keeps it and just measures it again.
   extract();
 });
 
-// A new extraction drops any recoloring: it would belong to other colors.
-function extract() {
-  if (!source) return;
-  const data = source.analysis.data;
-  extracted = $('auto').checked ? extractAuto(data, +$('detail').value) : extractPalette(data, +$('count').value);
-  colors = extracted;
-  locked = extracted.map(() => false);
+// A new base palette drops any recoloring, locks and highlight: they belonged
+// to other colors.
+function setBase(list) {
+  extracted = list;
+  colors = list;
+  locked = list.map(() => false);
   focused = -1;
-  if (!extracted.length) toast(t('photo.transparent'));
   render();
+}
+
+function extract() {
+  if (mode === 'own') { setBase(ownPalette()); return; }
+  if (!source) { setBase([]); return; }
+  const data = source.analysis.data;
+  setBase($('auto').checked ? extractAuto(data, +$('detail').value) : extractPalette(data, +$('count').value));
+  if (!extracted.length) toast(t('photo.transparent'));
   announce(t('photo.announce', { n: colors.length, values: colors.map(c => valueOfHex(c.hex).toFixed(1)).join(', ') }));
+}
+
+/* ---------- your own palette ---------- */
+// The pasted colors, with how much of the image each one would take.
+function ownPalette() {
+  const pal = paletteFromHexes(ownHexes);
+  if (!source) return pal;
+  const shares = sharesOf(mapPixels(source.analysis.data, pal, mapping()), pal.length);
+  return pal.map((c, i) => ({ ...c, share: shares[i] }));
+}
+
+function useOwn(hexes) {
+  mode = 'own';
+  ownHexes = hexes;
+  updateModeFields();
+  extract();
+  toast(tn('photo.ownUsed', hexes.length));
+}
+
+function backToPhoto() {
+  mode = 'photo';
+  updateModeFields();
+  extract();
+}
+
+// Switching between color and value keeps recoloring and locks: only the
+// zones (and so the shares) change.
+function remap() {
+  const pal = ownPalette();
+  extracted = pal;
+  colors = colors.map((c, i) => ({ ...c, share: pal[i].share }));
+  render();
+  savePrefs();
+}
+
+function updateModeFields() {
+  const own = mode === 'own';
+  $('photoControls').hidden = own;
+  $('ownControls').hidden = !own;
+  $('paletteTitle').textContent = own ? t('photo.ownTitle') : t('common.palette');
+  $('posterEmpty').textContent = own ? t('photo.posterEmptyOwn') : t('photo.posterEmpty');
+  $('recolorHint').textContent = own ? t('photo.recolorHintOwn') : t('photo.recolorHint');
+}
+
+function setPasteOpen(open) {
+  $('pastePanel').hidden = !open;
+  $('pasteBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('pasteText').focus();
+  else $('pasteText').value = '';
+}
+
+function pasteText(text) {
+  const found = parseHexList(text);
+  if (!found.length) { toast(t('common.noHex')); return false; }
+  useOwn(found);
+  return true;
 }
 
 // Always recolors from the photo's own colors, so repeated rolls keep its
@@ -155,7 +229,9 @@ function render() {
 
     const bottom = el('div', 'bottom');
     // Already light to dark, so the position is the rank.
-    bottom.append(el('span', 'role', t('role.' + roleFor(i, n, v))), el('span', 'share-pct', t('common.shareOf', { pct: pct(c.share) })), hexBtn, tools);
+    // Shares need an image: a pasted palette can come before one.
+    const share = source ? el('span', 'share-pct', t('common.shareOf', { pct: pct(c.share) })) : '';
+    bottom.append(el('span', 'role', t('role.' + roleFor(i, n, v))), share, hexBtn, tools);
     card.append(top, bottom);
     card.classList.toggle('focused', i === focused);
     // Clicking the card itself (not one of its buttons) does the same as the eye.
@@ -164,6 +240,8 @@ function render() {
   }));
 
   $('strips').hidden = !n;
+  $('share').parentElement.querySelector('.section-h').hidden = !source;
+  $('share').hidden = !source;
   $('share').style.gridTemplateColumns = colors.map(c => `${Math.max(c.share, 0.005)}fr`).join(' ');
   $('share').replaceChildren(...colors.map(c => { const s = el('span'); s.style.background = c.hex; return s; }));
   const vs = colors.map(c => valueOfHex(c.hex));
@@ -173,7 +251,8 @@ function render() {
   else showGap(info, gap);
 
   const notes = [];
-  if ($('auto').checked && n) notes.push(t('photo.noteFound', { n }));
+  if (mode === 'photo' && $('auto').checked && n) notes.push(t('photo.noteFound', { n }));
+  if (mode === 'own' && source && n) notes.push(t(mapping() === 'value' ? 'photo.noteOwnValue' : 'photo.noteOwnColor'));
   if (isRecolored()) notes.push(t('photo.noteRecolored'));
   if (n > MAX_COLORS) notes.push(t('photo.noteLimit', { max: MAX_COLORS }));
   $('paletteNote').textContent = notes.join(' ');
@@ -201,7 +280,7 @@ function drawPoster() {
   const grey = c => ({ ...c, hex: greyHex(valueOfHex(c.hex)) });
   const shown = colors.map((c, i) => (i === focused || (focused < 0 && !$('bw').checked) ? c : grey(c)));
   cv.width = width; cv.height = height;
-  cv.getContext('2d').putImageData(new ImageData(posterize(data, shown), width, height), 0, 0);
+  cv.getContext('2d').putImageData(new ImageData(posterize(data, shown, mapping()), width, height), 0, 0);
   cv.hidden = false;
   $('posterEmpty').hidden = true;
 }
@@ -233,9 +312,29 @@ $('exportCsp').addEventListener('click', async () => {
     toast(t('common.exportFailed'));
   }
 });
+$('pasteBtn').addEventListener('click', () => setPasteOpen($('pastePanel').hidden));
+$('pasteCancel').addEventListener('click', () => { setPasteOpen(false); $('pasteBtn').focus(); });
+$('pasteUse').addEventListener('click', () => { if (pasteText($('pasteText').value)) setPasteOpen(false); });
+$('mapping').addEventListener('change', remap);
+$('backToPhoto').addEventListener('click', backToPhoto);
+// Pasting hex text anywhere outside a field tries it as your palette (pasted
+// images are handled by image-input.js).
+document.addEventListener('paste', e => {
+  if (TYPING.test(document.activeElement?.tagName ?? '')) return;
+  const text = e.clipboardData?.getData('text');
+  if (text && parseHexList(text).length) { e.preventDefault(); pasteText(text); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('pastePanel').hidden) { setPasteOpen(false); $('pasteBtn').focus(); }
+});
+
 $('toCreator').addEventListener('click', () => { location.href = '/crear/?' + hexListParam(colors.map(c => c.hex)); });
 $('toGenerator').addEventListener('click', () => {
   location.href = '/?' + paletteParam(topByShare(colors, MAX_COLORS).map(c => c.hex));
 });
 
 loadPrefs();
+// /foto/?colors=… opens with that palette ready to try on an image.
+const incoming = colorsFromParam(new URLSearchParams(location.search).get('colors'));
+if (location.search) window.history.replaceState(null, '', location.pathname);
+if (incoming.length) useOwn(incoming);

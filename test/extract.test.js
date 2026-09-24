@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AUTO_MAX, DETAIL_DEFAULT, extractAuto, extractPalette, kmeans, mergeClusters, mergeDistance, posterize, toOklab, topByShare } from '../public/js/extract.js';
-import { hexToRgb, valueOfHex } from '../public/js/color.js';
+import { AUTO_MAX, DETAIL_DEFAULT, extractAuto, extractPalette, kmeans, mapPixels, mergeClusters, mergeDistance, paletteFromHexes, posterize, sharesOf, toOklab, topByShare } from '../public/js/extract.js';
+import { greyHex, hexToRgb, valueOfHex } from '../public/js/color.js';
 
 // An RGBA image made of solid blocks: [[hex, pixelCount, alpha?], ...]
 function image(blocks) {
@@ -99,4 +99,44 @@ test('topByShare keeps the colors that cover most, in value order', () => {
   ];
   assert.deepEqual(topByShare(cols, 3).map(c => c.hex), ['#CCCCCC', '#444444', '#000000']);
   assert.equal(topByShare(cols, 9).length, 5);
+});
+
+test('a pasted palette gets the extraction shape, light to dark', () => {
+  const pal = paletteFromHexes(['#1E1B3A', '#F2E3B3', '#D98E73']);
+  assert.deepEqual(pal.map(c => c.hex), ['#F2E3B3', '#D98E73', '#1E1B3A']);
+  assert.ok(pal.every(c => c.lab.length === 3 && typeof c.keyValue === 'number' && c.share === 0));
+});
+
+test('by color, each pixel goes to the palette color that looks most like it', () => {
+  const img = image([['#E07060', 3], ['#3050C0', 2]]);          // a red and a blue
+  const pal = paletteFromHexes(['#F08070', '#2040B0', '#FFFFFF']);
+  const idx = [...mapPixels(img, pal, 'color')];
+  const red = pal.findIndex(c => c.hex === '#F08070'), blue = pal.findIndex(c => c.hex === '#2040B0');
+  assert.deepEqual(idx, [red, red, red, blue, blue]);
+  assert.deepEqual(sharesOf(mapPixels(img, pal, 'color'), pal.length).map(s => +s.toFixed(1)), pal.map((_, i) => (i === red ? 0.6 : i === blue ? 0.4 : 0)));
+});
+
+test('by value, each pixel goes to the palette color with the nearest value, whatever its hue', () => {
+  const img = image([[greyHex(8.5), 2], [greyHex(5.2), 2], [greyHex(1.5), 1]]);
+  const pal = paletteFromHexes(['#E8D06A', '#3E8F5A', '#2A1F5C']);  // light yellow, mid green, dark indigo
+  const [v0, v1, v2] = pal.map(c => c.keyValue);
+  assert.ok(v0 > v1 && v1 > v2);
+  assert.deepEqual([...mapPixels(img, pal, 'value')], [0, 0, 1, 1, 2]);
+  // Painted with the palette's hues, lights and shadows where the photo had them.
+  const out = posterize(img, pal, 'value');
+  assert.deepEqual([...out.slice(0, 3)], hexToRgb('#E8D06A'));
+  assert.deepEqual([...out.slice(16, 19)], hexToRgb('#2A1F5C'));
+});
+
+test('zones follow the key, not the shown hex (so recoloring keeps them)', () => {
+  const img = image([['#E07060', 1], ['#3050C0', 1]]);
+  const pal = paletteFromHexes(['#F08070', '#2040B0']);
+  const recolored = pal.map(c => ({ ...c, hex: c.hex === '#F08070' ? '#00FF00' : '#FF00FF' }));
+  assert.deepEqual([...mapPixels(img, recolored, 'color')], [...mapPixels(img, pal, 'color')]);
+});
+
+test('transparent pixels count for no color', () => {
+  const idx = mapPixels(image([['#FF0000', 2, 0], ['#FF0000', 2]]), paletteFromHexes(['#FF0000']));
+  assert.deepEqual([...idx], [-1, -1, 0, 0]);
+  assert.deepEqual(sharesOf(idx, 1), [1]);
 });

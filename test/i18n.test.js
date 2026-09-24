@@ -27,6 +27,8 @@ function usedKeys() {
     const js = read('js/' + file);
     // A key ending in "." is a prefix completed at runtime (roles, listed below).
     for (const m of js.matchAll(/\bt\('([\w.]*\w)'/g)) keys.add(m[1]);
+    // t(cond ? 'a' : 'b')
+    for (const m of js.matchAll(/\bt\([^,;]*?\?\s*'(\w+\.[\w.]+)'\s*:\s*'(\w+\.[\w.]+)'/g)) { keys.add(m[1]); keys.add(m[2]); }
     for (const m of js.matchAll(/\btn\('([\w.]+)'/g)) { keys.add(m[1] + '_one'); keys.add(m[1] + '_other'); }
     // tn(cond ? 'a' : 'b', n)
     for (const m of js.matchAll(/\btn\([^,]*\?\s*'([\w.]+)'\s*:\s*'([\w.]+)'/g))

@@ -192,6 +192,14 @@ button.primary:disabled:hover{border-color:var(--accent)}
 @container (max-width:620px){.swatches.many{grid-template-columns:1fr;grid-auto-rows:minmax(64px,auto)}}
 .palette-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
 .palette-note{margin:-6px 0 0}
+.mode-controls{display:flex;flex-wrap:nowrap;align-items:center;gap:10px 20px}
+@container (max-width:620px){.mode-controls{flex-wrap:wrap}}
+.mode-controls select{padding:5px 8px;font-size:13.5px}
+/* A fixed basis, not a % of a shrink-to-fit parent: that made the row wrap and
+   left the buttons beside it floating between two lines. */
+.mode-controls .field.inline{flex:0 1 240px;width:auto}
+/* Small controls in a row share one height so they line up. */
+button.small,.mode-controls select,.recolor-bar select{min-height:32px}
 .recolor-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .recolor-bar select{padding:5px 8px;font-size:13.5px}
 .recolor-bar .hint{flex-basis:100%;margin:0}
@@ -244,6 +252,7 @@ button.accent:hover{border-color:var(--accent)}
 .hex-field{flex:1;min-width:0;font:inherit;font-family:var(--mono);font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 .hex-field:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .swap-btn{align-self:flex-start;margin:-6px 0}
+.reset-btn{align-self:flex-start}
 .ramp-swatches{min-height:220px}
 .compare-row{display:flex;flex-direction:column;gap:8px}
 .ramp-strip{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}

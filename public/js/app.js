@@ -3,7 +3,7 @@
 import { greyHex, textOn, valueOfHex } from './color.js';
 import { t, tn } from './i18n.js';
 import { adjustPalette, generatePalette, minGap, rankOf, rerollColor, roleFor, setColorValue, sortPalette } from './palette.js';
-import { addToHistory, load, paletteFromParam, removeFromHistory, saveHistory, saveSettings } from './storage.js';
+import { addToHistory, DEFAULTS, load, paletteFromParam, removeFromHistory, saveHistory, saveSettings } from './storage.js';
 import { drawSphere } from './sphere.js';
 import { buildAco, download, makeZip, palettePng } from './export.js';
 import { setIcon } from './icons.js';
@@ -236,6 +236,13 @@ const announce = () => say(t('gen.announce', { values: palette.colors.map(h => v
 
 /* ---------- events ---------- */
 $('gen').addEventListener('click', generate);
+// Back to the default controls, with a palette made from them; the current one
+// goes to the history like any generated palette.
+$('resetBtn').addEventListener('click', () => {
+  writeSettings(DEFAULTS);
+  generate();
+  toast(t('common.resetDone'));
+});
 $('toCreator').addEventListener('click', () => { location.href = '/crear/?' + hexListParam(palette.colors); });
 $('copyAll').addEventListener('click', () => copy(palette.colors.join('\n'), t('common.hexCopied')));
 

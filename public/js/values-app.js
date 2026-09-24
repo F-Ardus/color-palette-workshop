@@ -207,6 +207,21 @@ $('balanceBtn').addEventListener('click', () => {
   syncThresholds(); renderResult(); savePrefs();
   announce(t('values.balanced'));
 });
+// Back to the default controls; the image stays.
+$('resetBtn').addEventListener('click', () => {
+  levels = DEFAULT_LEVELS;
+  thresholds = evenThresholds(levels);
+  $('squint').value = 0;
+  $('squintOut').textContent = '0';
+  $('origGrey').checked = false;
+  if (image) blurred = image.values;
+  buildLevels();
+  buildThresholds();
+  drawOriginalGrey();
+  renderResult();
+  savePrefs();
+  toast(t('common.resetDone'));
+});
 $('downloadImg').addEventListener('click', () => {
   $('notan').toBlob(b => {
     if (!b) { toast(t('common.imageFailed')); return; }

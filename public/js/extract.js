@@ -1,7 +1,7 @@
 // Palette from an image: k-means in OKLab over the pixels of a downsampled copy.
 // Pure functions on RGBA bytes, so they run the same in the browser and in tests.
 
-import { linToHex, linToOklab, oklabToLin, valueOfHex } from './color.js';
+import { hexToLin, linToHex, linToOklab, lstarFromY, oklabToLin, valueOfHex } from './color.js';
 
 const DECODE = Float64Array.from({ length: 256 }, (_, i) => {
   const v = i / 255;
@@ -114,7 +114,7 @@ function toPalette(clusters, total) {
   return [...byHex.values()]
     .map(({ hex, lab, count }) => ({ hex, lab, share: count / total, v: valueOfHex(hex) }))
     .sort((a, b) => b.v - a.v)
-    .map(({ hex, lab, share }) => ({ hex, lab, share }));
+    .map(({ hex, lab, share, v }) => ({ hex, lab, keyValue: v, share }));
 }
 
 // RGBA bytes → [{hex, share, lab}], sorted light to dark. `share` is the
@@ -189,25 +189,73 @@ export function topByShare(colors, n) {
   return colors.filter(c => keep.has(c));
 }
 
-// Repaints RGBA bytes with only the given colors (each pixel → nearest in
-// OKLab). Alpha is kept. Returns a new array.
-export function posterize(rgba, colors) {
+// A palette of your own (hex list), in the shape extraction returns, so it can
+// be shown and matched against an image the same way. Light to dark.
+export function paletteFromHexes(hexes) {
+  return hexes
+    .map(hex => ({ hex, lab: linToOklab(hexToLin(hex)), keyValue: valueOfHex(hex), share: 0 }))
+    .sort((a, b) => b.keyValue - a.keyValue);
+}
+
+const valueOfBytes = (r, g, b) => lstarFromY(0.2126 * DECODE[r] + 0.7152 * DECODE[g] + 0.0722 * DECODE[b]) / 10;
+
+// Which palette color each pixel belongs to: by "color" (nearest in OKLab) or
+// by "value" (nearest value, whatever the hue). Colors are matched by their
+// key (`lab`, `keyValue`), not by the hex they show, so a recolored palette
+// keeps its zones. Returns an Int16Array; -1 for (mostly) transparent pixels.
+export function mapPixels(rgba, colors, by = 'color') {
   const k = colors.length;
   const cents = Float64Array.from(colors.flatMap(c => c.lab));
-  const rgbs = colors.map(c => [1, 3, 5].map(i => parseInt(c.hex.slice(i, i + 2), 16)));
-  const out = new Uint8ClampedArray(rgba.length);
+  const values = colors.map(c => c.keyValue ?? valueOfHex(c.hex));
+  const out = new Int16Array(rgba.length / 4).fill(-1);
+  if (!k) return out;
   const cache = new Map();
   const p = new Float64Array(3);
-  for (let i = 0; i < rgba.length; i += 4) {
+  for (let i = 0, px = 0; i < rgba.length; i += 4, px++) {
+    if (rgba[i + 3] < MIN_ALPHA) continue;
     const key = (rgba[i] << 16) | (rgba[i + 1] << 8) | rgba[i + 2];
     let idx = cache.get(key);
     if (idx === undefined) {
-      const lab = labOfBytes(rgba[i], rgba[i + 1], rgba[i + 2]);
-      p[0] = lab[0]; p[1] = lab[1]; p[2] = lab[2];
-      idx = nearest(p, 0, cents, k);
+      if (by === 'value') {
+        const v = valueOfBytes(rgba[i], rgba[i + 1], rgba[i + 2]);
+        idx = 0;
+        for (let c = 1; c < k; c++) if (Math.abs(values[c] - v) < Math.abs(values[idx] - v)) idx = c;
+      } else {
+        const lab = labOfBytes(rgba[i], rgba[i + 1], rgba[i + 2]);
+        p[0] = lab[0]; p[1] = lab[1]; p[2] = lab[2];
+        idx = nearest(p, 0, cents, k);
+      }
       cache.set(key, idx);
     }
-    const c = rgbs[idx];
+    out[px] = idx;
+  }
+  return out;
+}
+
+// Fraction of the (opaque) pixels assigned to each of n colors.
+export function sharesOf(indices, n) {
+  const counts = new Array(n).fill(0);
+  let total = 0;
+  for (const i of indices) if (i >= 0) { counts[i]++; total++; }
+  return counts.map(c => (total ? c / total : 0));
+}
+
+// Repaints RGBA bytes with only the given colors (see mapPixels for `by`).
+// Transparent pixels are painted too (with their alpha kept), matched by color.
+export function posterize(rgba, colors, by = 'color') {
+  const idx = mapPixels(rgba, colors, by);
+  const rgbs = colors.map(c => [1, 3, 5].map(i => parseInt(c.hex.slice(i, i + 2), 16)));
+  const cents = Float64Array.from(colors.flatMap(c => c.lab));
+  const out = new Uint8ClampedArray(rgba.length);
+  const p = new Float64Array(3);
+  for (let i = 0, px = 0; i < rgba.length; i += 4, px++) {
+    let k = idx[px];
+    if (k < 0) {
+      const lab = labOfBytes(rgba[i], rgba[i + 1], rgba[i + 2]);
+      p[0] = lab[0]; p[1] = lab[1]; p[2] = lab[2];
+      k = nearest(p, 0, cents, colors.length);
+    }
+    const c = rgbs[k];
     out[i] = c[0]; out[i + 1] = c[1]; out[i + 2] = c[2]; out[i + 3] = rgba[i + 3];
   }
   return out;

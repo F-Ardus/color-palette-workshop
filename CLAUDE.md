@@ -17,6 +17,11 @@ Herramientas:
   también tocando la tarjeta, Escape para salir), refresh (`rerollOne`: otro tono, mismo value y saturación;
   a los grises les da 0.3 de saturación) y candado (lo respeta "Randomizar colores" y "Originales").
   Extraer de nuevo borra fijados y resaltado. La imagen nunca sale del navegador.
+  "Tu paleta": pegando hex (panel, Ctrl+V fuera de un campo o `/foto/?colors=…`) se prueba una paleta propia
+  sobre la imagen (`paletteFromHexes`), repintando "por color" (OKLab más cercano) o "por value" (value más
+  cercano, cualquier tono: conserva las luces y sombras de la foto), con el % que cubriría cada color.
+  Cada color se asigna por su clave (`lab` / `keyValue`, ver `mapPixels`), no por el hex que muestra: así
+  randomizar o re-sortear cambia cómo se pinta una zona sin mover las zonas.
 - **Creador de paletas** (`/crear/`): paleta a mano de 0 a 24 colores. Arranca al azar (`generatePalette` sin
   escalar y armonía al azar), pegando hex (panel o Ctrl+V en cualquier lado; `parseHexList` acepta la salida
   de "Copiar hex", links, CSS, etc.) o de cero. Editar con selector de color o campo hex, mover, borrar,
@@ -32,6 +37,9 @@ Herramientas:
 - **Rampas de color** (`/rampas/`): pasos entre un color de luz y uno de sombra (`ramp.js`) en OKLab, OKLCH o
   RGB común (para comparar), con escalones de value parejos, desplazamiento de tono y saturación del medio
   (curva sin(πt): los extremos quedan exactos).
+- Generador, chequeo de values y rampas tienen "Restablecer" al final de sus ajustes (`#resetBtn`): vuelve
+  a los valores de fábrica y lo guarda. En el generador además genera una paleta nueva (la anterior va al
+  historial); en values la imagen se queda.
 - Generador, foto y rampas tienen "Abrir en el creador" (`/crear/?colors=…`). "Abrir en el generador" pasa la paleta
   por URL; si hay más de 9 colores, los 9 que más ocupan (`topByShare`).
 
@@ -172,5 +180,9 @@ Herramientas:
 ## Convenciones
 - Textos de UI en español rioplatense (voseo) y en inglés, siempre por i18n (nunca texto fijo en el JS).
   Comentarios de código en inglés.
+- Filas de controles: `align-items:center`, y los controles chicos (`button.small`, selects de barra) miden
+  32px de alto para alinearse. Nada de anchos en % dentro de un contenedor que se ajusta a su contenido
+  (fuerza saltos de línea raros): usar `flex-basis` fijo. Antes de mostrar un cambio de UI, medir en el
+  navegador que cada fila tenga el mismo centro vertical, en escritorio y en mobile.
 - JS vanilla, sin librerías ni paso de build. Lógica nueva en módulos puros con test;
   `app.js` solo cablea.
