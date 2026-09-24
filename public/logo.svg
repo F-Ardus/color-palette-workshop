@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="272 252 712 729" role="img" aria-label="Escala de Values">
+  <!-- a mask (not a clip-path) so the bands are composited first and the edge
+       doesn't pick up a dark halo from the layers underneath -->
+  <defs><mask id="sphere"><ellipse cx="628" cy="616.5" rx="351" ry="360" fill="#fff"/></mask></defs>
+  <g mask="url(#sphere)">
+    <rect x="272" y="252" width="712" height="729" fill="#1F1D36"/>
+    <circle cx="390" cy="284.9" r="653.9" fill="#6F4463"/>
+    <circle cx="315.6" cy="201.3" r="620.4" fill="#809081"/>
+    <circle cx="259.5" cy="154.1" r="540.6" fill="#E78575"/>
+    <circle cx="259.5" cy="169.4" r="377.8" fill="#F9E8D1"/>
+  </g>
+</svg>
